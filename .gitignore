@@ -1,7 +1,7 @@
 # Python files
 __pycache__
 *.pyc
-
+src/__pycache__
 # Secret folder
 
 # ipynb checkpoints
