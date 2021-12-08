@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Dec  8 10:44:40 2021
+
+@author: Ange
+"""
+#Import the parser file
+exec(open("parser.py").read())
+
+# Import the libraries
+import collections
+from ortools.sat.python import cp_model
+
+# Declare the model
+model = cp_model.CpModel()
+
+
+# Create the variables de Interval
+
+
+# Create the constraint
+# model.Add(x != y)
+
+# Call the solver
+# solver = cp_model.CpSolver()
+# status = solver.Solve(model)
