@@ -5,6 +5,7 @@ Created on Wed Dec  8 10:33:27 2021
 @author: Ange
 """
 import pandas as pd
+import numpy as np
 
 # open nominal files
 # example of one nominal file
@@ -25,6 +26,7 @@ header = ["Task number","Satellite","Priority","Duration","Earliest","Latest","R
 # data frame for nominal data
 data_df = pd.DataFrame(data_i,columns=header) 
 print("data_df : \n", data_df)
+list_tasks = data_df["Task number"].values.tolist()
 
 # open visibility files
 with open('./PIE_SXS10_data/visibilities.txt') as f:
@@ -38,6 +40,16 @@ for i in range(len(visibs)):
     else:
         data_visibs.append(visibs[i].strip().split())
 
+
 #creating the visibilities dataframe
 data_visib_df = pd.DataFrame(data_visibs,columns=header_visibs)
-print("data_visib_df, giving visibilities between satellites and antennas : \n", data_visib_df)
+print("visibilities between satellites and antennas : \n", data_visib_df)
+list_ant = data_visib_df["Ant"].unique().tolist()
+print("list of antennas : ", list_ant)
+
+
+
+
+
+
+
