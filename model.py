@@ -11,11 +11,14 @@ exec(open("parser.py").read())
 import collections
 from ortools.sat.python import cp_model
 
+#Define the parameters
+T = []
+
 # Declare the model
 model = cp_model.CpModel()
 
 
-# Create the variables de Interval
+# Create the variables
 
 
 # Create the constraint
