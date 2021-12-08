@@ -1,9 +1,10 @@
 # solvers
 
 
+PIE_SXS10_data - data storage
 
-H
+src - source code of parser and model
 
-ello LUJUN
-hello Ange here
-Hello Cyril Test
+Examples [OR-Tools].ipynb - notebook of several examples for utilization of OR-Tools
+
+Parser and Classes.ipynb - notebook of parser and classes
