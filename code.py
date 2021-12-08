@@ -9,6 +9,7 @@ Just an example for now, willbe completed later
 """Simple solve."""
 # Import the libraries
 from ortools.sat.python import cp_model
+import scipy as sc
 
 """Minimal CP-SAT example to showcase calling the solver."""
 # Creates the model.
