@@ -1,12 +1,13 @@
 import collections
 from ortools.sat.python import cp_model
 
-from parser import ParserForRequirements as pfr
-from parser import ParserForVisibilities as pfv
+import parser 
 import SatClass
 import TaskClass
 import AntClass
-        
+
+model = cp_model.CpModel() 
+     
 def get_dict_ant_for_sat(data_visib):
     d_ants = {}
     for i in range(len(data_visib['Ant'])) :
@@ -24,13 +25,13 @@ def get_dict_ant_for_sat(data_visib):
 
 
 if __name__ == 'main':
-    parser_req = pfv('./../PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt')
-    parser_visib = pfr('./../PIE_SXS10_data/visibilities.txt')
+    parser_req = parser.ParserForRequirements('./../PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt')
+    parser_visib = parser.ParserForVisibilities('./../PIE_SXS10_data/visibilities.txt')
 
     data_df = parser_req.get_requirements_data()
     data_visib_df = parser_visib.get_visibs_data()
 
-    model = cp_model.CpModel()
+
 
     # construct objects of Ant
     d_ants = {}
