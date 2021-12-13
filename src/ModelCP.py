@@ -52,7 +52,7 @@ def SimpleSatProgram(n_tasks,n_antennes):
     # number of variables : tasks * antennes
 
     # bounds for time
-    upper_bound = 100000000
+    upper_bound = 1175490
     lower_bound = 0
 
     # Creates the variables.
@@ -106,7 +106,7 @@ def SimpleSatProgram(n_tasks,n_antennes):
     # Contraint 1 : pour chaque tache
     for task_id in intervals_in_task :
         print(intervals_in_task[task_id])
-        model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == 1000) 
+        model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == 3000) 
         # TODO : 100 -> duration
         
 
@@ -126,13 +126,19 @@ def SimpleSatProgram(n_tasks,n_antennes):
                 for s,e in list_intervals:
                     t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                     t2_bool = model.NewBoolVar("t2_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    # First Try
                     model.Add(variables_matrix[task_id,antenne_id].start > e).OnlyEnforceIf(t1_bool)
                     model.Add(variables_matrix[task_id,antenne_id].end < s).OnlyEnforceIf(t2_bool)
+
+                    # Another method
+                    t1_bool_and = model.NewBoolVar("t1_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    t2_bool_and = model.NewBoolVar("t2_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    model.Add(t1_bool_and==1).OnlyEnforceIf(t1_bool)
+                    model.Add(t2_bool_and==1).OnlyEnforceIf(t2_bool)
                     tmp_t1_t2 = []
-                    tmp_t1_t2.append(t1_bool)
-                    tmp_t1_t2.append(t2_bool)
-                    model.Add(sum(tmp_t1_t2) == 1 )
-                
+                    tmp_t1_t2.append(t1_bool_and)
+                    tmp_t1_t2.append(t2_bool_and)
+                    model.Add(sum(tmp_t1_t2) == 1)
                 # TODO : to verify if it works for fixed start, end, interval
                 # model.AddNoOverlap(list_intervals)
 
@@ -142,7 +148,7 @@ def SimpleSatProgram(n_tasks,n_antennes):
     # [START solve]
     solver = cp_model.CpSolver()
     # solver.parameters.enumerate_all_solutions = True
-    solution_printer = VarArraySolutionPrinter(intervals_in_task)
+    solution_printer = VarArraySolutionPrinter(intervals_in_antenne)
     status = solver.Solve(model,solution_printer)
     # [END solve]
 
@@ -201,17 +207,15 @@ if __name__ == '__main__':
     print("After add elements : \n", dict_visib)
 
     dict_non_visib = get_dict_non_visib(dict_visib)
-    
+
     # change keys for dict_non_visib
     oldkeys = dict_non_visib.keys()
     for sat,ant in list(oldkeys):
-
         sat_id = int(sat.replace("SAT",""))
         ant_id = int(ant.replace("ANT",""))
-
         new_key = (sat_id,ant_id)
         dict_non_visib[new_key] = dict_non_visib.pop((sat,ant))
-    
+
     print("========================")
     print("NON visibility of sat : \n", dict_non_visib)
 
