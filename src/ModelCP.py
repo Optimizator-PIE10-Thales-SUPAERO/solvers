@@ -7,23 +7,6 @@ from parser import ParserForVisibilities as pfv
 model = cp_model.CpModel()
 dict_visib = {}
 dict_non_visib = {}
-        
-def get_dict_ant_for_sat(data_visib):
-    d_ants = {}
-    for i in range(len(data_visib['Ant'])) :
-        name = data_visib['Ant'][i]
-        ID = int(name.strip('ANT'))
-        start = int(data_visib['Start'][i])
-        end = int(data_visib['End'][i])
-        if ID in d_ants:
-            count = len(d_ants[ID])
-            d_ants[ID].append(model.NewIntervalVar(start,end-start,end,str(count+1)))
-        else:
-            d_ants[ID] = []
-            d_ants[ID].append(model.NewIntervalVar(start,end-start,end,str(1)))
-    # print(d_ants)
-    return d_ants
-
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
@@ -157,23 +140,17 @@ def SimpleSatProgram(n_tasks,n_antennes):
 
     # Creates a solver and solves the model.
     # [START solve]
-
     solver = cp_model.CpSolver()
-
     # solver.parameters.enumerate_all_solutions = True
     solution_printer = VarArraySolutionPrinter(intervals_in_task)
-
     status = solver.Solve(model,solution_printer)
-
     # [END solve]
 
 #    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-#        print("GOOD!")
+#        print('Status = %s' % solver.StatusName(status))
+#        print('Number of solutions found: %i' % solution_printer.solution_count())
 #    else:
 #        print('No solution found.')
-
-#    print('Status = %s' % solver.StatusName(status))
-#    print('Number of solutions found: %i' % solution_printer.solution_count())
 
     print('\nStatistics')
     print(f'  status   : {solver.StatusName(status)}')
@@ -240,16 +217,3 @@ if __name__ == '__main__':
 
     SimpleSatProgram(3,3)
 
-    # for sat in list_sat:
-    #     #name = data_df['Satellite'][i]
-
-    #     # data visib for each satelite in the list
-    #     data_visib = data_visib_df[data_visib_df['Sat']==sat]
-    #     print(data_visib)
-
-    #     # organize one dictionary for each ant
-    #     d_ant_tmp = get_dict_ant_for_sat(data_visib)
-    #     ID = int(name.strip('SAT'))
-    #     priority = data_df['Priority'][i]
-    #     eariest = int(data_df['Eariest'][i])
-    #     latest = int(data_visib_df['Latest'][i])
