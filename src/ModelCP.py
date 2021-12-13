@@ -1,29 +1,6 @@
 import collections
 from ortools.sat.python import cp_model
 
-<<<<<<< HEAD
-import parser 
-import SatClass
-import TaskClass
-import AntClass
-
-model = cp_model.CpModel() 
-     
-def get_dict_ant_for_sat(data_visib):
-    d_ants = {}
-    for i in range(len(data_visib['Ant'])) :
-        name = data_visib['Ant'][i]
-        ID = int(name.strip('ANT'))
-        start = int(data_visib['Start'][i])
-        end = int(data_visib['End'][i])
-        if ID in d_ants:
-            count = len(d_ants[ID])
-            d_ants[ID].append(model.NewIntervalVar(start,end-start,end,str(count+1)))
-        else:
-            d_ants[ID] = []
-            d_ants[ID].append(model.NewIntervalVar(start,end-start,end,str(1)))
-    return d_ants
-=======
 from parser import ParserForRequirements as pfr
 from parser import ParserForVisibilities as pfv
 
@@ -132,7 +109,6 @@ def SimpleSatProgram(n_tasks,n_antennes):
         model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == 3000) 
         # TODO : 100 -> duration
         
->>>>>>> 3f803aebde46d759f7dbec86378cdbda584c3284
 
     print("Contraint2: No overlap for all intervals of each antenne")
     # Contraint 2 : pour chaque antenne
@@ -154,7 +130,6 @@ def SimpleSatProgram(n_tasks,n_antennes):
                     model.Add(variables_matrix[task_id,antenne_id].start > e).OnlyEnforceIf(t1_bool)
                     model.Add(variables_matrix[task_id,antenne_id].end < s).OnlyEnforceIf(t2_bool)
 
-                    # Another method
                     t1_bool_and = model.NewBoolVar("t1_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                     t2_bool_and = model.NewBoolVar("t2_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                     model.Add(t1_bool_and==1).OnlyEnforceIf(t1_bool)
@@ -176,11 +151,6 @@ def SimpleSatProgram(n_tasks,n_antennes):
     status = solver.Solve(model,solution_printer)
     # [END solve]
 
-<<<<<<< HEAD
-if __name__ == 'main':
-    parser_req = parser.ParserForRequirements('./../PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt')
-    parser_visib = parser.ParserForVisibilities('./../PIE_SXS10_data/visibilities.txt')
-=======
 #    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
 #        print('Status = %s' % solver.StatusName(status))
 #        print('Number of solutions found: %i' % solution_printer.solution_count())
@@ -197,17 +167,12 @@ if __name__ == 'main':
 if __name__ == '__main__':
     parser_req = pfr('./../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt')
     parser_visib = pfv('./../PIE_SXS10_data/visibilities_test.txt')
->>>>>>> 3f803aebde46d759f7dbec86378cdbda584c3284
 
     data_df = parser_req.get_requirements_data()
     data_visib_df = parser_visib.get_visibs_data()
 
-<<<<<<< HEAD
-
-=======
     # print(data_df)
     # print(data_visib_df)
->>>>>>> 3f803aebde46d759f7dbec86378cdbda584c3284
 
     # construct objects of Ant
     d_ants = {}
