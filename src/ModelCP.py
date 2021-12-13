@@ -59,6 +59,8 @@ def get_dict_non_visib(dict_visib):
 
 def SimpleSatProgram(n_tasks,n_antennes):
     """ CP-SAT example to showcase calling the solver."""
+
+    print("\n================START MODEL=================\n")
     # Creates the model.
     # [START model]
     model = cp_model.CpModel()
@@ -67,7 +69,7 @@ def SimpleSatProgram(n_tasks,n_antennes):
     # number of variables : tasks * antennes
 
     # bounds for time
-    upper_bound = 10000
+    upper_bound = 100000000
     lower_bound = 0
 
     # Creates the variables.
@@ -94,12 +96,11 @@ def SimpleSatProgram(n_tasks,n_antennes):
             start_var = model.NewIntVar(lower_bound, upper_bound, 'start' + suffix)
             end_var = model.NewIntVar(lower_bound, upper_bound, 'end' + suffix)
             size_var = model.NewIntVar(lower_bound, upper_bound, 'size' + suffix)
-            interval_var = model.NewIntervalVar(start=start_var,size=size_var, end=end_var,name="interval"+suffix)
+            interval_var = model.NewIntervalVar(start=start_var,size=size_var, end=end_var,name="interval"+suffix) # size is a variable not a constant here, more complex
 
             variables_matrix[task_id,antenne_id] = task_type(start=start_var,end=end_var,interval=interval_var)
             intervals_in_antenne[antenne_id].append(interval_var)
             intervals_in_task[task_id].append(task_type(start=start_var,end=end_var,interval=interval_var))
-
             list_task.append(interval_var)
        
             #list_line.append(model.NewIntervalVar(start=start_var,end=end_var,name="interval"+suffix))
@@ -111,24 +112,43 @@ def SimpleSatProgram(n_tasks,n_antennes):
     # Creates the constraints.
     # [START constraints]
 
+    print("--------------MODEL PARAMETERS-------------")
+    # print("intervals in each task ", intervals_in_task)
+    print("variables matrix : ", variables_matrix)
 
+
+    print("---------------CONTRAINTS----------------")
+
+    print("Contraint1: duration for each task")
     # Contraint 1 : pour chaque tache
     for task_id in intervals_in_task :
-        model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == 100) 
-        # TODO : 100 -> duration        
+        print(intervals_in_task[task_id])
+        model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == 1000) 
+        # TODO : 100 -> duration
         
 
+    print("Contraint2: No overlap for all intervals of each antenne")
     # Contraint 2 : pour chaque antenne
     for antenne_id in intervals_in_antenne:
+        print(intervals_in_antenne[antenne_id])
         model.AddNoOverlap(intervals_in_antenne[antenne_id])
 
     # Contraint 3: pour chaque position dans le matrix
+    print("Contraint3: No overlap for interval variable and non-visib intervals (not variables) ")
     for task_id in range(n_tasks):
         for antenne_id in range(n_antennes):
-            if (task_id,antenne_id) in dict_non_visib.keys():
-                list_intervals = dict_non_visib[task_id,antenne_id]
+            if (task_id+1,antenne_id+1) in dict_non_visib.keys():
+                list_intervals = dict_non_visib[task_id+1,antenne_id+1]
+                print(list_intervals)
                 for s,e in list_intervals:
-                    model.Add(variables_matrix[task_id,antenne_id].start > e or variables_matrix[task_id,antenne_id].end < s ) 
+                    t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    t2_bool = model.NewBoolVar("t2_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    model.Add(variables_matrix[task_id,antenne_id].start > e).OnlyEnforceIf(t1_bool)
+                    model.Add(variables_matrix[task_id,antenne_id].end < s).OnlyEnforceIf(t2_bool)
+                    tmp_t1_t2 = []
+                    tmp_t1_t2.append(t1_bool)
+                    tmp_t1_t2.append(t2_bool)
+                    model.Add(sum(tmp_t1_t2) == 1 )
                 
                 # TODO : to verify if it works for fixed start, end, interval
                 # model.AddNoOverlap(list_intervals)
@@ -137,20 +157,40 @@ def SimpleSatProgram(n_tasks,n_antennes):
 
     # Creates a solver and solves the model.
     # [START solve]
+
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-    solution_printer = VarArraySolutionPrinter(variables_matrix)
+
+    # solver.parameters.enumerate_all_solutions = True
+    solution_printer = VarArraySolutionPrinter(intervals_in_task)
+
+    status = solver.Solve(model,solution_printer)
+
     # [END solve]
-    print('Status = %s' % solver.StatusName(status))
-    print('Number of solutions found: %i' % solution_printer.solution_count())
+
+#    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+#        print("GOOD!")
+#    else:
+#        print('No solution found.')
+
+#    print('Status = %s' % solver.StatusName(status))
+#    print('Number of solutions found: %i' % solution_printer.solution_count())
+
+    print('\nStatistics')
+    print(f'  status   : {solver.StatusName(status)}')
+    print(f'  conflicts: {solver.NumConflicts()}')
+    print(f'  branches : {solver.NumBranches()}')
+    print(f'  wall time: {solver.WallTime()} s')
 
 
 if __name__ == '__main__':
     parser_req = pfr('./../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt')
-    parser_visib = pfv('./../PIE_SXS10_data/visibilities.txt')
+    parser_visib = pfv('./../PIE_SXS10_data/visibilities_test.txt')
 
     data_df = parser_req.get_requirements_data()
     data_visib_df = parser_visib.get_visibs_data()
+
+    # print(data_df)
+    # print(data_visib_df)
 
     # construct objects of Ant
     d_ants = {}
@@ -173,13 +213,32 @@ if __name__ == '__main__':
     for i in range(len(data_visib_df)):
         dict_visib[data_visib_df["Sat"][i],data_visib_df["Ant"][i]] = []
 
+    print("========================")
+    print("Initialization for the matrix of visibility")
+    print(dict_visib)
     # add element
     for i in range(len(data_visib_df)):
         dict_visib[data_visib_df["Sat"][i],data_visib_df["Ant"][i]].append((data_visib_df['Start'][i],data_visib_df['End'][i]))
 
-    get_dict_non_visib(dict_visib)
+    print("========================")
+    print("After add elements : \n", dict_visib)
 
-    SimpleSatProgram(3,10)
+    dict_non_visib = get_dict_non_visib(dict_visib)
+    
+    # change keys for dict_non_visib
+    oldkeys = dict_non_visib.keys()
+    for sat,ant in list(oldkeys):
+
+        sat_id = int(sat.replace("SAT",""))
+        ant_id = int(ant.replace("ANT",""))
+
+        new_key = (sat_id,ant_id)
+        dict_non_visib[new_key] = dict_non_visib.pop((sat,ant))
+    
+    print("========================")
+    print("NON visibility of sat : \n", dict_non_visib)
+
+    SimpleSatProgram(3,3)
 
     # for sat in list_sat:
     #     #name = data_df['Satellite'][i]
