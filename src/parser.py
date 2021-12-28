@@ -28,7 +28,7 @@ class ParserForRequirements():
         data_i = []
         for i in range(3,len(self.lines)):
             data_i.append(self.lines[i].strip().split())
-        print(data_i)
+        # print(data_i)
 
         data_df = pd.DataFrame(data_i,columns=self.header)
         data_df[["Priority","Duration","Earliest",
