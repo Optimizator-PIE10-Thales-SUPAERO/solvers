@@ -62,8 +62,8 @@ def SimpleSatProgram(n_tasks,n_antennes):
     # Named tuple to store information about created variables.
     task_type = collections.namedtuple('task_type', 'start end interval')
     # Named tuple to manipulate solution information.
-    assigned_task_type = collections.namedtuple('assigned_task_type',
-                                            'start job index duration')
+    assigned_antennes_type = collections.namedtuple('assigned_antennes_type',
+                                            'start end task antenne')
 
     # Creates job intervals and add to the corresponding lists.
     variables_matrix = {}
@@ -143,6 +143,15 @@ def SimpleSatProgram(n_tasks,n_antennes):
 
     # [END constraints]
 
+    # [START objective]
+    obj_var = model.NewIntVar(lower_bound,upper_bound,'objective')
+    model.AddMaxEquality(obj_var,[
+        variables_matrix[task_id-1,antenne_id-1].end
+        for task_id,antenne_id in dict_non_visib.keys()
+    ])
+    model.Minimize(obj_var)
+    # [END objective]
+
     # Creates a solver and solves the model.
     # [START solve]
     solver = cp_model.CpSolver()
@@ -151,17 +160,54 @@ def SimpleSatProgram(n_tasks,n_antennes):
     status = solver.Solve(model,solution_printer)
     # [END solve]
 
-#    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-#        print('Status = %s' % solver.StatusName(status))
-#        print('Number of solutions found: %i' % solution_printer.solution_count())
-#    else:
-#        print('No solution found.')
+    # DISPLAY THE RESULTS
 
     print('\nStatistics')
     print(f'  status   : {solver.StatusName(status)}')
     print(f'  conflicts: {solver.NumConflicts()}')
     print(f'  branches : {solver.NumBranches()}')
     print(f'  wall time: {solver.WallTime()} s')
+
+    # create one list of assigned intervals for each task:
+    assigned_intervals = collections.defaultdict(list)
+    for task_id in range(n_tasks):
+        for antenne_id in range(n_antennes):
+            assigned_intervals[task_id].append(
+                assigned_antennes_type(start=solver.Value(
+                    variables_matrix[task_id,antenne_id].start),
+                                       end=solver.Value(
+                                           variables_matrix[task_id,antenne_id].end),
+                                       task=task_id,
+                                       antenne=antenne_id
+                )
+            )
+
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+#        print('Status = %s' % solver.StatusName(status))
+        print('Number of solutions found: %i' % solution_printer.solution_count())
+        output = ''
+        for task_id in range(n_tasks):
+            sol_line_antennes = 'Task' + str(task_id) + ':'
+            sol_line = '           '
+            for intervals in assigned_intervals[task_id]:
+                name = 'task_%i_antenne_%i' % (intervals.task,intervals.antenne)
+                # Add spaces to output align columns
+                sol_line_antennes += '%-30s' %name
+
+                start = intervals.start
+                end = intervals.end
+                sol_tmp = '[%i,%i]' % (start, end)
+
+                # Add spaces to output align columns
+                sol_line += '%-30s' % sol_tmp
+            sol_line += '\n'
+            sol_line_antennes += '\n'
+            output += sol_line_antennes
+            output += sol_line
+        print(f'Optimal time usage : {solver.ObjectiveValue()}')
+        print(output)
+    else:
+        print('No solution found.')
 
 
 if __name__ == '__main__':
