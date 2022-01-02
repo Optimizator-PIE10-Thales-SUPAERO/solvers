@@ -20,10 +20,12 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 """
 
-def SimpleSatProgram(model,dict_non_visib,n_tasks,n_antennes):
+"""First Version Model"""
+def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     """ CP-SAT example to showcase calling the solver."""
 
     # number of variables : tasks * antennes
+    n_antennes = len(list_antennes)
     # bounds for time
     upper_bound = 1175490
     lower_bound = 0
@@ -40,14 +42,19 @@ def SimpleSatProgram(model,dict_non_visib,n_tasks,n_antennes):
 
     # Creates job intervals and add to the corresponding lists.
     variables_matrix = {}
+
+    # time periods in each antenne
     intervals_in_antenne = collections.defaultdict(list)
+
+    # time periods in each task
     intervals_in_task = collections.defaultdict(list)
 
     dict_by_task = {}
 
+    # Note that, here the index of task is related to the position, instead of real ID
     for task_id in range(n_tasks):
         list_task = []
-        for antenne_id in range(n_antennes):
+        for antenne_id in list_antennes:
             suffix = '_%i_%i' % (task_id, antenne_id)
             start_var = model.NewIntVar(lower_bound, upper_bound, 'start' + suffix)
             end_var = model.NewIntVar(lower_bound, upper_bound, 'end' + suffix)
@@ -73,23 +80,27 @@ def SimpleSatProgram(model,dict_non_visib,n_tasks,n_antennes):
     print("-->CONTRAINTS<--")
 
     print("Contraint1: duration for each task")
+    print("Contraint2: No overlap for all intervals of each task/satellite")
     # Contraint 1 : pour chaque tache
     for task_id in intervals_in_task :
         # print(intervals_in_task[task_id])
-        model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == 3000) 
+        model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == int(dict_data['Duration'][task_id]))
+        # Contraint 2 : pour chaque satellite
+        model.AddNoOverlap([i.interval for i in intervals_in_task[task_id]])
 
-    print("Contraint2: No overlap for all intervals of each antenne")
-    # Contraint 2 : pour chaque antenne
+
+    print("Contraint3: No overlap for all intervals of each antenne")
+    # Contraint 3 : pour chaque antenne
     for antenne_id in intervals_in_antenne:
         # print(intervals_in_antenne[antenne_id])
         model.AddNoOverlap(intervals_in_antenne[antenne_id])
 
-    # Contraint 3: pour chaque position dans le matrix
-    print("Contraint3: No overlap for interval variable and non-visib intervals (not variables) ")
+    # Contraint 4: pour chaque position dans le matrix
+    print("Contraint4: No overlap for interval variable and non-visib intervals (not variables) ")
     for task_id in range(n_tasks):
-        for antenne_id in range(n_antennes):
-            if (task_id+1,antenne_id+1) in dict_non_visib.keys():
-                list_intervals = dict_non_visib[task_id+1,antenne_id+1]
+        for antenne_id in list_antennes:
+            if (task_id+1,antenne_id) in dict_non_visib.keys():
+                list_intervals = dict_non_visib[task_id+1,antenne_id]
                 # print(list_intervals)
                 for s,e in list_intervals:
                     t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
@@ -107,14 +118,16 @@ def SimpleSatProgram(model,dict_non_visib,n_tasks,n_antennes):
                     tmp_t1_t2.append(t2_bool_and)
                     model.Add(sum(tmp_t1_t2) == 1)
 
+
     print("-->FINISED<--")
     # [END constraints]
 
     # [START objective]
     obj_var = model.NewIntVar(lower_bound,upper_bound,'objective')
+    # sat_id = int(dict_data['Satellite'][task_id].strip('SAT'))
     model.AddMaxEquality(obj_var,[
-        variables_matrix[task_id-1,antenne_id-1].end
-        for task_id,antenne_id in dict_non_visib.keys()
+        variables_matrix[task_id,antenne_id].end
+        for task_id in range(n_tasks) for antenne_id in list_antennes
     ])
     model.Minimize(obj_var)
     # [END objective]
@@ -140,7 +153,7 @@ def SimpleSatProgram(model,dict_non_visib,n_tasks,n_antennes):
     # create one list of assigned intervals for each task:
     assigned_intervals = collections.defaultdict(list)
     for task_id in range(n_tasks):
-        for antenne_id in range(n_antennes):
+        for antenne_id in list_antennes:
             assigned_intervals[task_id].append(
                 assigned_antennes_type(start=solver.Value(
                     variables_matrix[task_id,antenne_id].start),
@@ -156,10 +169,11 @@ def SimpleSatProgram(model,dict_non_visib,n_tasks,n_antennes):
 #        print('Number of solutions found: %i' % solution_printer.solution_count())
         output = ''
         for task_id in range(n_tasks):
-            sol_line_antennes = 'Task' + str(task_id) + ':'
+            sol_line_antennes = dict_data['Task number'][task_id] + ':'
             sol_line = '           '
             for intervals in assigned_intervals[task_id]:
-                name = 'task_%i_antenne_%i' % (intervals.task,intervals.antenne)
+                # name = 'task_%i_antenne_%i' % (intervals.task,intervals.antenne)
+                name = dict_data['Satellite'][intervals.task] + '_' + 'ANT%i' % intervals.antenne
                 # Add spaces to output align columns
                 sol_line_antennes += '%-30s' %name
 
