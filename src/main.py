@@ -1,3 +1,4 @@
+import sys
 import collections
 from ortools.sat.python import cp_model
 from parser import ParserForRequirements as pfr
@@ -5,15 +6,23 @@ from parser import ParserForVisibilities as pfv
 from helper import *
 from ModelCP import *
 
-if __name__ == '__main__':
-    parser_req = pfr('./../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt')
-    parser_visib = pfv('./../PIE_SXS10_data/visibilities_test.txt')
+def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
+                visib_file = './../PIE_SXS10_data/visibilities_test.txt'):
+    parser_req = pfr(req_file)
+    parser_visib = pfv(visib_file)
 
     data_df = parser_req.get_requirements_data()
     data_visib_df = parser_visib.get_visibs_data()
 
-    print("Requirements are: \n",data_df)
+    # parameters
+    n_tasks = len(data_df['Task number'])
+    list_sats = [int(i.strip('SAT')) for i in data_visib_df.Sat.unique().tolist()]
+    list_antennes = [int(i.strip('ANT')) for i in data_visib_df.Ant.unique().tolist()]
+    n_antennes = len(list_antennes)
+
+    print("@Requirements are: \n",data_df)
     # print(data_visib_df)
+    print("@list of antennes: \n", list_antennes)
 
     # construct objects of Ant
     d_ants = {}
@@ -62,8 +71,30 @@ if __name__ == '__main__':
         new_key = (sat_id,ant_id)
         dict_non_visib[new_key] = dict_non_visib.pop((sat,ant))
 
-    # print("\n========================")
+    print("\n-->ARGUMENTS<--")
     # print("NON visibility of sat : \n", dict_non_visib)
 
-    SimpleSatProgram(model,dict_non_visib,3,3)
+    # transfer dataframe of requirements and visibilities dataframe to dictionary
+    dict_data_df = data_df.to_dict()
+    dict_visib_df = data_visib_df.to_dict()
+    print("@Requirements dictionary : \n",dict_data_df)
+    # print("@Visibility dictionary : \n", dict_visib_df)
+
+    print("-->FINISHED<--\n")
+    SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_antennes)
     print("==>END MODEL<==\n")
+
+def ModelNominalV1(req_file,visib_file='./../PIE_SXS10_data/visibilities.txt'):
+    ModelSimple(req_file,visib_file)
+
+if __name__ == '__main__':
+    arguments = sys.argv
+    print(arguments)
+    if len(arguments) == 1:
+        ModelSimple()
+    elif len(arguments) == 2:
+        ModelNominalV1(arguments[1])
+    elif len(arguments) == 3:
+        ModelNominalV1(arguments[1],arguments[2])
+    else:
+        print("Wrong arguments")
