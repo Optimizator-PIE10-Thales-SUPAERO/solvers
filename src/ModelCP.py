@@ -169,20 +169,20 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
 #        print('Number of solutions found: %i' % solution_printer.solution_count())
         output = ''
         for task_id in range(n_tasks):
-            sol_line_antennes = dict_data['Task number'][task_id] + ':'
-            sol_line = '           '
+            sol_line_antennes = dict_data['Task number'][task_id] + ':  '
+            sol_line = '        '
             for intervals in assigned_intervals[task_id]:
                 # name = 'task_%i_antenne_%i' % (intervals.task,intervals.antenne)
                 name = dict_data['Satellite'][intervals.task] + '_' + 'ANT%i' % intervals.antenne
                 # Add spaces to output align columns
-                sol_line_antennes += '%-30s' %name
+                sol_line_antennes += '%-15s' %name
 
                 start = intervals.start
                 end = intervals.end
                 sol_tmp = '[%i,%i]' % (start, end)
 
                 # Add spaces to output align columns
-                sol_line += '%-30s' % sol_tmp
+                sol_line += '%-15s' % sol_tmp
             sol_line += '\n'
             sol_line_antennes += '\n'
             output += sol_line_antennes
