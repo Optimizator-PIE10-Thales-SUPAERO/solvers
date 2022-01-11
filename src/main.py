@@ -1,8 +1,8 @@
 import sys
 import collections
 from ortools.sat.python import cp_model
-from parser import ParserForRequirements as pfr
-from parser import ParserForVisibilities as pfv
+from Parser import ParserForRequirements as pfr
+from Parser import ParserForVisibilities as pfv
 from helper import *
 from ModelCP import *
 
@@ -21,7 +21,7 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
     n_antennes = len(list_antennes)
 
     print("@Requirements are: \n",data_df)
-    # print(data_visib_df)
+    print("@Visibilities are: \n",data_visib_df)
     print("@list of antennes: \n", list_antennes)
 
     # construct objects of Ant
