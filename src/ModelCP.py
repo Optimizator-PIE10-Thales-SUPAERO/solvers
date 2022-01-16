@@ -84,16 +84,24 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # Contraint 1 : pour chaque tache
     for task_id in intervals_in_task :
         # print(intervals_in_task[task_id])
+        """
         model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == int(dict_data['Duration'][task_id]))
+        """
+        model.Add(sum([variables_matrix[task_id,j].end - variables_matrix[task_id,j].start for j in intervals_in_antenne]) == int(dict_data['Duration'][task_id]))
         # Contraint 2 : pour chaque satellite
+        """
         model.AddNoOverlap([i.interval for i in intervals_in_task[task_id]])
-
+        """
+        model.AddNoOverlap([variables_matrix[task_id,j].interval for j in intervals_in_antenne])
 
     print("Contraint3: No overlap for all intervals of each antenne")
     # Contraint 3 : pour chaque antenne
     for antenne_id in intervals_in_antenne:
         # print(intervals_in_antenne[antenne_id])
+        """
         model.AddNoOverlap(intervals_in_antenne[antenne_id])
+        """
+        model.AddNoOverlap([variables_matrix[i,antenne_id].interval for i in intervals_in_task])
 
     # Contraint 4: pour chaque position dans le matrix
     print("Contraint4: No overlap for interval variable and non-visib intervals (not variables) ")
@@ -118,6 +126,22 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
                     tmp_t1_t2.append(t2_bool_and)
                     model.Add(sum(tmp_t1_t2) == 1)
 
+    # Améliorer la contrainte 2:
+    # pour tous les antennes de chaque tâche, il y a qu'un interval qui a une durée et les autres sont null.
+    for task_id in intervals_in_task:
+        tmp_c2 = []
+        duration = int(dict_data['Duration'][task_id])
+        for antenne_id in intervals_in_antenne:
+            t_bool = model.NewBoolVar("t_c2_"+str(task_id) + str(antenne_id))
+            model.Add( (variables_matrix[task_id,antenne_id].end - variables_matrix[task_id,antenne_id].start) == duration).OnlyEnforceIf(t_bool)
+            # print(str(task_id) + str(antenne_id) +" "+ str(dict_data['Duration'][task_id]))
+            """
+            t_bool_and = model.NewBoolVar("t_c2_and_"+str(task_id)+str(antenne_id))
+            model.Add(t_bool_and==1).OnlyEnforceIf(t_bool)
+            """
+            tmp_c2.append(t_bool)
+        model.Add(sum(tmp_c2) == 1)
+
 
     print("-->FINISED<--")
     # [END constraints]
@@ -125,6 +149,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # [START objective]
     obj_var = model.NewIntVar(lower_bound,upper_bound,'objective')
     # sat_id = int(dict_data['Satellite'][task_id].strip('SAT'))
+
     model.AddMaxEquality(obj_var,[
         variables_matrix[task_id,antenne_id].end
         for task_id in range(n_tasks) for antenne_id in list_antennes
@@ -142,6 +167,10 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
 
     # DISPLAY THE RESULTS
     status = solver.Solve(model)
+
+    # Pour 0 conflits [TO FIX]
+#    while(solver.NumConflicts()>0):
+#       status = solver.Solve(model)
 
     print('\n-->Statistics<--')
     print(f'  status   : {solver.StatusName(status)}')
@@ -168,10 +197,12 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
 #        print('Status = %s' % solver.StatusName(status))
 #        print('Number of solutions found: %i' % solution_printer.solution_count())
         output = ''
+        return_dict = collections.defaultdict(list)
         for task_id in range(n_tasks):
             sol_line_antennes = dict_data['Task number'][task_id] + ':  '
             sol_line = '        '
             for intervals in assigned_intervals[task_id]:
+                dict_task = {}
                 # name = 'task_%i_antenne_%i' % (intervals.task,intervals.antenne)
                 name = dict_data['Satellite'][intervals.task] + '_' + 'ANT%i' % intervals.antenne
                 # Add spaces to output align columns
@@ -183,6 +214,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
 
                 # Add spaces to output align columns
                 sol_line += '%-15s' % sol_tmp
+
+                # create return structure
+                dict_task['satellite'] = dict_data['Satellite'][intervals.task]
+                dict_task['antenne'] = 'ANT%i' % intervals.antenne
+                dict_task['start'] = start
+                dict_task['end'] = end
+                return_dict[dict_data['Task number'][task_id]].append(dict_task)
             sol_line += '\n'
             sol_line_antennes += '\n'
             output += sol_line_antennes
@@ -190,7 +228,9 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
         print('\n-->RESULTS<--')
         print(f'Optimal time usage : {solver.ObjectiveValue()}')
         print(output)
+        # print(return_dict)
         print('-->FINISHED<--\n')
+        return return_dict
     else:
         print('No solution found.')
 
