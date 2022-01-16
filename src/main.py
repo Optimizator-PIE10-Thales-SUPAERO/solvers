@@ -5,6 +5,7 @@ from Parser import ParserForRequirements as pfr
 from Parser import ParserForVisibilities as pfv
 from helper import *
 from ModelCP import *
+from checker import CheckerInOne as check
 
 def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
                 visib_file = './../PIE_SXS10_data/visibilities_test.txt'):
@@ -81,20 +82,29 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
     # print("@Visibility dictionary : \n", dict_visib_df)
 
     print("-->FINISHED<--\n")
-    SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_antennes)
+    results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_antennes)
     print("==>END MODEL<==\n")
+    return dict_data_df,list_sats,list_antennes,results
 
 def ModelNominalV1(req_file,visib_file='./../PIE_SXS10_data/visibilities.txt'):
-    ModelSimple(req_file,visib_file)
+    return ModelSimple(req_file,visib_file)
 
 if __name__ == '__main__':
     arguments = sys.argv
     print(arguments)
+    dict_res = {}
+    dict_req = {}
+    list_sats = []
+    list_ants = []
     if len(arguments) == 1:
-        ModelSimple()
+        dict_req,list_sats,list_ants,dict_res = ModelSimple()
     elif len(arguments) == 2:
-        ModelNominalV1(arguments[1])
+        dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1])
     elif len(arguments) == 3:
-        ModelNominalV1(arguments[1],arguments[2])
+        dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1],arguments[2])
     else:
         print("Wrong arguments")
+    print("==>START CHECKING<==")
+    # print(dict_req)
+    check(dict_req,list_sats,list_ants,dict_res)
+    print("==>END CHECKING<==")
