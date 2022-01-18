@@ -9,8 +9,11 @@ import numpy as np
 import matplotlib.patches as mpatches
 import xlwt
 from pathlib import Path
+import datetime as dt
+import plotly
+import plotly.express as px
 
-def write_file(solver, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path):
+def write_file(solver, visibility, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path):
 
     book = xlwt.Workbook(encoding='utf-8')
     sheet1 = book.add_sheet(u'datasheet', cell_overwrite_ok=True)
@@ -18,23 +21,81 @@ def write_file(solver, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, 
     sheet1.write(0, 0, 'Task') 
     sheet1.write(0, 1, 'Start')  
     sheet1.write(0, 2, 'Finish')
-    sheet1.write(0, 3, 'name')
-    sheet1.write(0, 4, 'Resource')
+    sheet1.write(0, 3, 'Name')
+    sheet1.write(0, 4, 'Color')
+    sheet1.write(0, 5, 'Opacity')
+    sheet1.write(0, 6, 'Information')
     i = 1
+    sat_ant_list = []
+    antname_index = 0
     for key in ts_dict_2d_par_antenne:
         duation_list = duration_ts_dict_2d_par_antenne[key]
         j = 0
-    for ts in ts_dict_2d_par_antenne[key]:
-            sheet1.write(i, 0, key)
+        for ts in ts_dict_2d_par_antenne[key]:
+            satlite = key.split(":")[0]
+            antname = key.split(":")[1]
+            if ((key not in sat_ant_list) and ((len(ts_dict_2d_par_antenne[key]) != 0)and (solver.Value(ts)!=-1))):
+                antname_index = antname_index +1
+                sub_df = visibility[(visibility.Sat ==satlite)&(visibility.Ant==antname)]
+                for index,vis in sub_df.iterrows():
+                        sheet1.write(i, 0, key)
+                        sheet1.write(i, 1, int(vis['Start']))
+                        sheet1.write(i, 2, int(vis['End']))
+                        sheet1.write(i, 3, str(index) + " "+ satlite + " " + antname)
+                        sheet1.write(i, 4, antname_index*5)
+                        sheet1.write(i, 5, 0.2)
+                        sheet1.write(i, 6, "Start Time="+str(vis['Start'])+ "; End Time: " + str(vis['End']))
+                        i = i+1
             if (len(ts_dict_2d_par_antenne[key]) != 0):
                 if (solver.Value(ts)!=-1):
+                    sheet1.write(i, 0, key)
                     sheet1.write(i, 1, solver.Value(ts))
                     sheet1.write(i, 2, int(solver.Value(ts))+ int(duation_list[j]))
-                    sheet1.write(i, 3, str(ts))
-                    sheet1.write(i, 4, "Black")
+                    sheet1.write(i, 3, str(ts)[21:len(str(ts))])
+                    sheet1.write(i, 4, antname_index*5)
+                    sheet1.write(i, 5, 1)
+                    sheet1.write(i, 6, "Start Time="+str(solver.Value(ts))+ "; End Time: " + str(int(solver.Value(ts))+ int(duation_list[j])))
                     i = i + 1
             j = j + 1
-    book.save('Solution Data.xls')
+    book.save(data_output_path)
+
+def gantt_diagram(data_output_path):
+    EXCEL_FILE = Path.cwd() / data_output_path
+
+    # Read Dataframe from Excel file
+    df = pd.read_excel(EXCEL_FILE)
+
+    # Assign Columns to variables
+    tasks = df["Task"]
+    start = df["Start"]
+    reference = dt.datetime(2022,1,1,0,0)
+    datetime_series_s = start.astype('timedelta64[s]') + reference
+    time_series_s = pd.to_datetime(datetime_series_s, unit='s')
+
+
+    finish = df["Finish"]
+    datetime_series_e = finish.astype('timedelta64[s]') + reference
+    time_series_e = pd.to_datetime(datetime_series_e, unit='s')
+    color = df["Color"]
+
+    opacity = df ["Opacity"]
+    information = df["Name"]
+    # Create Gantt Chart
+    fig = px.timeline(
+        df, x_start=time_series_s, x_end=time_series_e, y=tasks, color=color, title="Task Overview", opacity = opacity, hover_name = information
+    )
+
+    # Upade/Change Layout
+    fig.update_yaxes(autorange="reversed")
+    fig.update_layout(title_font_size=42, font_size=18, title_font_family="Arial")
+
+    # Interactive Gantt
+    # fig = ff.create_gantt(df)
+
+    # Save Graph and Export to HTML
+    plotly.offline.plot(fig, filename="Task_Overview_Gantt.html")
+
+
 
 #  Pour extraire des donnees
 def extraire (task_path, visibility_path):
@@ -176,10 +237,10 @@ def Solver_PIE(version, data_input_path, data_output_path):
 
         # Add a limit that each task can only be transferred N times
         if version == "simple":
-            model.Add(sum(ts_bool_and_list)<=1)
+            model.Add(sum(ts_bool_and_list)==1)
             model.Add(sum(ts_bool_negative_list)==(nb_antenne-1))
         if version == "complex":
-            model.Add(sum(ts_bool_and_list)<=N)
+            model.Add(sum(ts_bool_and_list)==N)
             model.Add(sum(ts_bool_negative_list)==(nb_antenne-N)) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
                
         model.Add(sum(ts_bool_and_list)<=N)
@@ -229,9 +290,10 @@ def Solver_PIE(version, data_input_path, data_output_path):
             print()
 
     # Export data from list to excel
-    write_file(solver, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path)
+    write_file(solver, data_visib_df, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path)
 
-
+    # Read data form excel and draw it in 
+    gantt_diagram(data_output_path)
 def main():
     """Minimal CP-SAT example to showcase calling the solver."""
     Solver_PIE("complex", ["./PIE_SXS10_data/nominal/scenario_10SAT_nominal_with_oneoff1.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
