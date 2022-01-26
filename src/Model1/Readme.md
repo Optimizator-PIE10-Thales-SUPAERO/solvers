@@ -73,7 +73,7 @@ Add the requirement file as the first argument
 Eg.
 
 ```
-python main.py ../PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt
+python main.py ../../PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt
 ```
 
 Result:
