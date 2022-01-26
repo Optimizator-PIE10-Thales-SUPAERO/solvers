@@ -7,8 +7,8 @@ from helper import *
 from ModelCP import *
 from checker import CheckerInOne as check
 
-def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
-                visib_file = './../PIE_SXS10_data/visibilities_test.txt'):
+def ModelSimple(req_file = './../../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
+                visib_file = './../../PIE_SXS10_data/visibilities_test.txt'):
     parser_req = pfr(req_file)
     parser_visib = pfv(visib_file)
 
@@ -86,7 +86,7 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
     print("==>END MODEL<==\n")
     return dict_data_df,list_sats,list_antennes,results
 
-def ModelNominalV1(req_file,visib_file='./../PIE_SXS10_data/visibilities.txt'):
+def ModelNominalV1(req_file,visib_file='./../../PIE_SXS10_data/visibilities.txt'):
     return ModelSimple(req_file,visib_file)
 
 if __name__ == '__main__':
