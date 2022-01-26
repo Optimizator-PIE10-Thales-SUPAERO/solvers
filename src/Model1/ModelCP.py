@@ -154,6 +154,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
         variables_matrix[task_id,antenne_id].end
         for task_id in range(n_tasks) for antenne_id in list_antennes
     ])
+
     model.Minimize(obj_var)
     # [END objective]
 
