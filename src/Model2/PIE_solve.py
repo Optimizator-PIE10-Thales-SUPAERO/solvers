@@ -149,7 +149,7 @@ def Solver_PIE(version, data_input_path, data_output_path):
     obj_var_tache_list = []
 
     # Create different list of ts according to different antenne in different satellite
-    for index,vis in data_visib_df.iterrows():
+    for _,vis in data_visib_df.iterrows():
         antenne_name = str(vis['Sat'])+':'+ str(vis['Ant'])
         if antenne_name not in ts_dict_2d_par_antenne:
             ts_ant_list = []
@@ -161,7 +161,7 @@ def Solver_PIE(version, data_input_path, data_output_path):
             
     
     # For every task in the tasklist
-    for index_tache,tache in data_df.iterrows():
+    for _,tache in data_df.iterrows():
         ts_list = []
         antennes = [ants for ants in data_visib_df[data_visib_df["Sat"]==str(tache["Satellite"])]["Ant"].drop_duplicates()]
         nb_antenne = len(antennes)
@@ -198,7 +198,7 @@ def Solver_PIE(version, data_input_path, data_output_path):
             model.Add(ts==-1).OnlyEnforceIf(ts_bool_not_equal_1)
             list_union.append(bool_sup)
             list_union.append(ts_bool_not_equal_1)
-            model.Add(sum(list_union) == 1)
+            model.Add(sum(list_union)==1)
 
         # visibility constarints
             temp_union = []
@@ -218,32 +218,33 @@ def Solver_PIE(version, data_input_path, data_output_path):
                 model.Add(sum(temp_union)<=1) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
             if version == "complex":
                 model.Add(sum(temp_union)<=N)
+                
         # Add priority task transfer order limit
-        if version == "complex":
-            for i in range(len(ts_list)):
-                pri_ts = priority_list[i]
-                for j in range(i+1, len(ts_list)):
-                    temp_union_pri = []
-                    ts_bool_equal_1 = model.NewBoolVar("tempvar_bool_not_equal-1")
-                    model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
-                    ts_bool_pri = model.NewBoolVar("tempvar_bool_priority")
-                    if (pri_ts<priority_list[j]):
-                        model.Add(ts[i]<ts[j]).OnlyEnforceIf(ts_bool_pri)
-                    if (pri_ts>priority_list[j]):
-                        model.Add(ts[i]>ts[j]).OnlyEnforceIf(ts_bool_pri)
-                    temp_union_pri.append(ts_bool_equal_1)
-                    temp_union_pri.append(ts_bool_pri)
-                    model.Add(sum(temp_union_pri)==1)
+        # if version == "complex":
+        #     for i in range(len(ts_list)):
+        #         pri_ts = priority_list[i]
+        #         for j in range(i+1, len(ts_list)):
+        #             temp_union_pri = []
+        #             ts_bool_equal_1 = model.NewBoolVar("tempvar_bool_not_equal-1")
+        #             model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
+        #             ts_bool_pri = model.NewBoolVar("tempvar_bool_priority")
+        #             if (pri_ts<priority_list[j]):
+        #                 model.Add(ts[i]<ts[j]).OnlyEnforceIf(ts_bool_pri)
+        #             if (pri_ts>priority_list[j]):
+        #                 model.Add(ts[i]>ts[j]).OnlyEnforceIf(ts_bool_pri)
+        #             temp_union_pri.append(ts_bool_equal_1)
+        #             temp_union_pri.append(ts_bool_pri)
+        #             model.Add(sum(temp_union_pri)==1)
 
         # Add a limit that each task can only be transferred N times
-        if version == "simple":
-            model.Add(sum(ts_bool_and_list)==1)
-            model.Add(sum(ts_bool_negative_list)==(nb_antenne-1))
-        if version == "complex":
-            model.Add(sum(ts_bool_and_list)==N)
-            model.Add(sum(ts_bool_negative_list)==(nb_antenne-N)) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
+        # if version == "simple":
+        #     model.Add(sum(ts_bool_and_list)==1)
+        #     model.Add(sum(ts_bool_negative_list)==(nb_antenne-1))
+        # if version == "complex":
+        #     model.Add(sum(ts_bool_and_list)==N)
+        #     model.Add(sum(ts_bool_negative_list)==(nb_antenne-N)) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
                
-        model.Add(sum(ts_bool_and_list)<=N)
+        model.Add(sum(ts_bool_and_list)==N)
         model.Add(sum(ts_bool_negative_list)==(nb_antenne-N))
         ts_list_2d_par_tache.append(ts_list)  
         obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
@@ -251,30 +252,49 @@ def Solver_PIE(version, data_input_path, data_output_path):
         obj_var_tache_list.append(obj_var_chaque_tache)
 
     # Add the limitation that the same antenne cannot transmit two tache at the same time
+    ts_ant_list = []
+    duration_ant_list = []
+    sat_list_temp = []
     for key in ts_dict_2d_par_antenne:
-        if len(ts_dict_2d_par_antenne[key])>=2:
-            ts_list = ts_dict_2d_par_antenne[key]
-            duration_list = duration_ts_dict_2d_par_antenne[key]
-
-            for i in range(len(ts_dict_2d_par_antenne[key])):
-                ts_bool_equal_1 = model.NewBoolVar("intersect: %s"% str(ts_list[i]))
-                model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
-                
-                for j in range(i+1,len(ts_dict_2d_par_antenne[key])):
-                    temp_bool_union = []
-                    bool_smaller = model.NewBoolVar("smaller")
-                    bool_bigger = model.NewBoolVar("bigger")
-                    model.Add((ts_list[i]+duration_list[i])<=ts_list[j]).OnlyEnforceIf(bool_smaller)
-                    model.Add(ts_list[i]>=ts_list[j] +duration_list[j]).OnlyEnforceIf(bool_bigger)
-                    temp_bool_union.append(bool_smaller)
-                    temp_bool_union.append(bool_bigger)
-                    temp_bool_union.append(ts_bool_equal_1)
-                    model.Add(sum(temp_bool_union)==1)
+        ts_list_TEMP = ts_dict_2d_par_antenne[key]
+        duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
+        satlite = key.split(":")[0]
+        if (satlite not in sat_list_temp):
+            sat_list_temp.append(satlite)
+            ts_list = []
+            duration_list = []
+            ts_ant_list.append(ts_list)
+            duration_ant_list.append(duration_list)
+        sat_index = sat_list_temp.index(satlite)
+        for ts_temp in ts_list_TEMP:
+            ts_ant_list[sat_index].append(ts_temp)
+        for duration_temp in duration_list_TEMP:
+            duration_ant_list[sat_index].append(duration_temp)
+    for sat in sat_list_temp:
+        sat_index = sat_list_temp.index(sat)
+        ts_list = ts_ant_list[sat_index]
+        # print (ts_list)
+        duration_list = duration_ant_list[sat_index]
+        if (len(ts_list)==0):
+            continue
+        for i in range(len(ts_list)):
+            ts_bool_equal_1 = model.NewBoolVar("intersect: %s"% str(ts_list[i]))
+            model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
+            for j in range(i+1,len(ts_list)):
+                temp_bool_union = []
+                bool_smaller = model.NewBoolVar("smaller")
+                bool_bigger = model.NewBoolVar("bigger")
+                model.Add((ts_list[i]+duration_list[i])<=ts_list[j]).OnlyEnforceIf(bool_smaller)
+                model.Add(ts_list[i]>=ts_list[j] +duration_list[j]).OnlyEnforceIf(bool_bigger)
+                temp_bool_union.append(bool_smaller)
+                temp_bool_union.append(bool_bigger)
+                temp_bool_union.append(ts_bool_equal_1)
+                model.Add(sum(temp_bool_union)==1)
 
     # Define the objectif variables to find the best solution Min(Max(ts))
-    obj_var = model.NewIntVar(0, time_limit_right_all, 'valeur maximum des variables de decision')
-    model.AddMaxEquality(obj_var, obj_var_tache_list)
-    model.Minimize(sum(obj_var_tache_list))
+    # obj_var = model.NewIntVar(0, time_limit_right_all, 'valeur maximum des variables de decision')
+    # model.AddMaxEquality(obj_var, obj_var_tache_list)
+    # model.Minimize(sum(obj_var_tache_list))
 
    # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
@@ -284,10 +304,10 @@ def Solver_PIE(version, data_input_path, data_output_path):
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         print(f'Maximum of objective functionW: {solver.ObjectiveValue()}\n')
         # print solution by task
-        for tsl in ts_list_2d_par_tache:
-            for ts in tsl:
-                print('%s = %i' % (str(ts),solver.Value(ts)))
-            print()
+        # for tsl in ts_list_2d_par_tache:
+        #     for ts in tsl:
+        #         print('%s = %i' % (str(ts),solver.Value(ts)))
+        #     print()
         # Statistics.
     print('\nStatistics')
     print(f'  status   : {solver.StatusName(status)}')
