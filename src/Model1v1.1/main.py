@@ -106,5 +106,7 @@ if __name__ == '__main__':
         print("Wrong arguments")
     print("==>START CHECKING<==")
     # print(dict_req)
+    print("-->results are<--")
+    print(dict_req)
     check(dict_req,list_sats,list_ants,dict_res)
     print("==>END CHECKING<==")
