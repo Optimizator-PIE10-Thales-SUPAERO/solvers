@@ -12,8 +12,8 @@ def Period_Checker(dict_req, dict_res):
         data_in_task = dict_res[task_id]
         duration_res = 0;
         for data in data_in_task:
-            duration_res += data['end'] - data['start']
-        if not duration_res==duration:
+            duration_res = data['end'] - data['start']
+        if duration_res >0 and duration_res<duration or duration_res > duration:
             return False
         # print(duration_res)
     GanttForTask(dict_res)
