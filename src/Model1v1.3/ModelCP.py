@@ -51,18 +51,15 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     num_vals = n_tasks*n_antennes
 
     # Named tuple to store information about created variables.
-    task_type = collections.namedtuple('task_type', ['stack','height'])
-    rep_type = collections.namedtuple('rep_type', ['start','end','interval'])
+    task_type = collections.namedtuple('task_type', ['start','end','interval','antenne'])
     # Named tuple to manipulate solution information.
     assigned_antennes_type = collections.namedtuple('assigned_antennes_type',
                                             'start end task antenne')
 
     # Creates job intervals and add to the corresponding lists.
+    # tasks * repetition
     variables_matrix = {}
-
-    # variables for repetitive
     variables_rep = {}
-
 
     # Note that, here the index of task is related to the position, instead of real ID
     for task_id in range(n_tasks):
@@ -70,20 +67,15 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
         # variables of repetitive
         rep = model.NewIntVar(1,dict_max_repetive[task_id],'rep_%i'%task_id)
         variables_rep[task_id] = rep
-        for antenne_id in list_antennes:
-            suffix = '_%i_%i' % (task_id, antenne_id)
-            
-            list_rep_var = []
-            for rep_id in range(dict_max_repetive[task_id]):
-                start_var = model.NewIntVar(lower_bound, upper_bound, 'start' + suffix)
-                end_var = model.NewIntVar(lower_bound, upper_bound, 'end' + suffix)
-                size_var = model.NewIntVar(lower_bound, upper_bound, 'size' + suffix)
-                interval_var = model.NewIntervalVar(start=start_var,size=size_var, end=end_var,name="interval"+suffix) # size is a variable not a constant here, more complex
-
-                rep_var = rep_type(start=start_var,end=end_var,interval=interval_var)
-                list_rep_var.append(rep_var)
-
-            variables_matrix[task_id,antenne_id] = task_type(stack=list_rep_var,height=dict_repetitive[task_id])
+        for rep_id in range(dict_max_repetive[task_id]):
+            suffix = '_%i_%i' % (task_id, rep_id)
+            start_var = model.NewIntVar(lower_bound, upper_bound, 'start' + suffix)
+            end_var = model.NewIntVar(lower_bound, upper_bound, 'end' + suffix)
+            size_var = model.NewIntVar(lower_bound, upper_bound, 'size' + suffix)
+            interval_var = model.NewIntervalVar(start=start_var,size=size_var, end=end_var,name="interval"+suffix)
+            # antenne id
+            antenne_id_var = model.NewIntVar(1,len(list_antennes),'antenn'+suffix)
+            variables_matrix[task_id,rep_id] = task_type(start=start_var,end=end_var,interval=interval_var,antenne=antenne_id_var)
 
     # [END variables]
 
@@ -96,70 +88,88 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     
     print("-->CONTRAINTS<--")
 
+    all_time_and_antenne = []
+
     print("Contraint1: No overlap for all intervals of each task/satellite")
     # Contraint 1 : pour chaque tache
-    for task_id in range(n_tasks) :
-        # Contraint 2 : pour chaque satellite
+    for task_id in range(n_tasks):
         """
         model.AddNoOverlap([i.interval for i in intervals_in_task[task_id]])
         """
         all_time_in_task = []
-        for antenne_id in list_antennes:
-            stack = variables_matrix[task_id,antenne_id].stack
-            for i in stack:
-                all_time_in_task.append(i.interval)
+        for rep_id in range(dict_max_repetive[task_id]):
+            element = variables_matrix[task_id,rep_id]
+            all_time_in_task.append(element.interval)
+            # cannot not use interval in all_time_and_antenne, because they cannot be controlled well by OnlyEnforceIf
+            all_time_and_antenne.append((element.antenne,element.start,element.end))
         model.AddNoOverlap(all_time_in_task)
 
+    
     print("Contraint2: No overlap for all intervals of each antenne")
     # Contraint 2 : pour chaque antenne
-    for antenne_id in list_antennes:
-        # print(intervals_in_antenne[antenne_id])
-        """
-        model.AddNoOverlap(intervals_in_antenne[antenne_id])
-        """
-        all_time_in_antenne = []
-        for task_id in range(n_tasks):
-            stack = variables_matrix[task_id,antenne_id].stack
-            for i in stack:
-                all_time_in_antenne.append(i.interval)
-        model.AddNoOverlap(all_time_in_antenne)
+    # could be optimized, because in the first contraint, all intervals are already no overlappings
+    for i in range(len(all_time_and_antenne)-1):
+        for j in range(i+1,len(all_time_and_antenne)):
+            bool_var = model.NewBoolVar('boolvar')
+            t1_bool = model.NewBoolVar("t1_"+str(i)+str(j))
+            t2_bool = model.NewBoolVar("t2_"+str(i)+str(j))
+
+            # if t1 then antenne ids are same
+            time_i = (all_time_and_antenne[i][1],all_time_and_antenne[i][2])
+            time_j = (all_time_and_antenne[j][1],all_time_and_antenne[j][2])
+            # model.AddNoOverlap(list_int).OnlyEnforceIf(bool_var) # AddNoOverlap may not use OnlyEnforceIf
+            model.Add(time_i[0]>=time_j[1]).OnlyEnforceIf(t1_bool)
+            model.Add(time_i[1]<=time_j[0]).OnlyEnforceIf(t2_bool)
+
+            tmp_t1_t2 = [t1_bool,t2_bool]
+            model.Add(sum(tmp_t1_t2) == 1).OnlyEnforceIf(bool_var)
+            
+            model.Add(all_time_and_antenne[i][0] == all_time_and_antenne[j][0]).OnlyEnforceIf(bool_var)
+            model.Add(all_time_and_antenne[i][0] != all_time_and_antenne[j][0]).OnlyEnforceIf(bool_var.Not())
+
+            # model.AddBoolOr([t1_bool,t2_bool])
+
 
     # Contraint 3: pour chaque position dans le matrix
     print("Contraint3: No overlap for interval variable and non-visib intervals (not variables) ")
-    for task_id in range(n_tasks):
-        for antenne_id in list_antennes:
-            if (task_id+1,antenne_id) in dict_non_visib.keys():
-                list_intervals = dict_non_visib[task_id+1,antenne_id]
-                # print(list_intervals)
-                for s,e in list_intervals:
-                    for time in variables_matrix[task_id,antenne_id].stack:
-                        t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
-                        t2_bool = model.NewBoolVar("t2_"+str(task_id)+str(antenne_id)+str(s)+str(e))
-                        # First Try
-                        model.Add(time.start > e).OnlyEnforceIf(t1_bool)
-                        model.Add(time.end < s).OnlyEnforceIf(t2_bool)
 
-                        t1_bool_and = model.NewBoolVar("t1_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
-                        t2_bool_and = model.NewBoolVar("t2_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
-                        model.Add(t1_bool_and==1).OnlyEnforceIf(t1_bool)
-                        model.Add(t2_bool_and==1).OnlyEnforceIf(t2_bool)
-                        tmp_t1_t2 = []
-                        tmp_t1_t2.append(t1_bool_and)
-                        tmp_t1_t2.append(t2_bool_and)
-                        model.Add(sum(tmp_t1_t2) == 1)
+    for task_id in range(n_tasks):
+        for rep_id in range(dict_max_repetive[task_id]):
+            # choose one antenne
+            element = variables_matrix[task_id,rep_id]
+            antenne = element.antenne
+            tmp_same_bool = []
+
+            for antenne_id in list_antennes:
+                is_same_bool = model.NewBoolVar("ant_"+str(task_id)+str(rep_id)+ str(antenne_id))
+                model.Add(antenne == antenne_id).OnlyEnforceIf(is_same_bool)
+                
+                list_intervals = dict_non_visib[task_id+1,antenne_id]
+                for s,e in list_intervals:
+                    t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    t2_bool = model.NewBoolVar("t2_"+str(task_id)+str(antenne_id)+str(s)+str(e))
+                    #
+                    model.Add(element.start > e).OnlyEnforceIf(t1_bool)
+                    model.Add(element.end < s).OnlyEnforceIf(t2_bool)
+                    tmp_t1_t2 = [t1_bool,t2_bool]
+                    model.Add(sum(tmp_t1_t2) == 1).OnlyEnforceIf(is_same_bool)
+                    # print(tmp_t1_t2)
+                
+            tmp_same_bool.append(is_same_bool)
+            print(tmp_same_bool)
+            model.Add(sum(tmp_same_bool) == 1)
+    
 
     # Contraint 4: Repetition is consider and each duration is fixed
     # pour tous les antennes de chaque tâche, il y a qu'un interval qui a une durée et les autres sont null.
     for task_id in range(n_tasks):
         tmp_c2 = []
         duration = int(dict_duration[task_id])
-        for antenne_id in list_antennes:
-            rep_id = 0
-            for time in variables_matrix[task_id,antenne_id].stack:
-                t_bool = model.NewBoolVar("t_c2_"+str(task_id) + str(antenne_id) + str(rep_id))
-                rep_id += 1
-                model.Add((time.end - time.start) == duration).OnlyEnforceIf(t_bool)
-                tmp_c2.append(t_bool)
+        for rep_id in range(dict_max_repetive[task_id]):
+            element = variables_matrix[task_id,rep_id]
+            t_bool = model.NewBoolVar("t_c2_"+str(task_id) + str(rep_id))
+            model.Add((element.end - element.start) == duration).OnlyEnforceIf(t_bool)
+            tmp_c2.append(t_bool)
         model.Add(sum(tmp_c2) == variables_rep[task_id])
 
 
@@ -210,13 +220,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # create one list of assigned intervals for each task:
     assigned_intervals = collections.defaultdict(list)
     for task_id in range(n_tasks):
-        for antenne_id in list_antennes:
-            for time in variables_matrix[task_id,antenne_id].stack:
-                assigned_intervals[task_id].append(
-                    assigned_antennes_type(start=solver.Value(time.start),
-                                           end=solver.Value(time.end),
-                                           task=task_id,
-                                           antenne=antenne_id
+        for rep_id in range(dict_max_repetive[task_id]):
+            element = variables_matrix[task_id,rep_id]
+            assigned_intervals[task_id].append(
+                assigned_antennes_type(start=solver.Value(element.start),
+                                       end=solver.Value(element.end),
+                                       task=task_id,
+                                       antenne=solver.Value(element.antenne)
                     )
                 )
 
