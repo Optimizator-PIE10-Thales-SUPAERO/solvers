@@ -28,7 +28,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
-    upper_bound = 16000 # 1175490
+    upper_bound = 1175490
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
@@ -41,11 +41,11 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     dict_max_repetive = {}
     for key in dict_duration:
         if dict_occ[key] == -1:
-            dict_max_repetive[key] = 5 # math.floor(upper_bound/(dict_duration[key]+25200))
+            dict_max_repetive[key] = math.floor(upper_bound/(dict_duration[key]+25200))
         else:
             dict_max_repetive[key] = 1
 
-    print(dict_max_repetive)
+    print("@dict_max_repetive:\n",dict_max_repetive)
     # Creates the variables.
     # [START variables]
     num_vals = n_tasks*n_antennes
@@ -153,14 +153,17 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     for task_id in range(n_tasks):
         tmp_c2 = []
         duration = int(dict_duration[task_id])
+        list_duration = []
         for antenne_id in list_antennes:
             rep_id = 0
             for time in variables_matrix[task_id,antenne_id].stack:
                 t_bool = model.NewBoolVar("t_c2_"+str(task_id) + str(antenne_id) + str(rep_id))
                 rep_id += 1
                 model.Add((time.end - time.start) == duration).OnlyEnforceIf(t_bool)
+                list_duration.append(time.end-time.start)
                 tmp_c2.append(t_bool)
         model.Add(sum(tmp_c2) == variables_rep[task_id])
+        model.Add(sum(list_duration) == duration * variables_rep[task_id])
 
 
     print("-->FINISED<--")
@@ -219,6 +222,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
                                            antenne=antenne_id
                     )
                 )
+    
+                
+    assigned_repetition = []
+    for task_id in range(n_tasks):
+        assigned_repetition.append(solver.Value(variables_rep[task_id]))
+
+    print("@assigned_repetition:\n",assigned_repetition)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
 #        print('Status = %s' % solver.StatusName(status))
