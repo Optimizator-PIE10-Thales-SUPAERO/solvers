@@ -258,6 +258,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
 
     # OUTPUT
     # Named tuple to manipulate solution information.
+    
     assigned_antennes_type = collections.namedtuple('assigned_antennes_type',
                                             'start end task antenne occ')
 
