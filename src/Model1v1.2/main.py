@@ -23,6 +23,7 @@ def ModelSimple(req_file = './../../PIE_SXS10_data/nominal/scenario_10SAT_nomina
 
     print("@Requirements are: \n",data_df)
     print("@Visibilities are: \n",data_visib_df)
+    print("@list of satellites: \n",list_sats)
     print("@list of antennes: \n", list_antennes)
 
     # construct objects of Ant
@@ -36,6 +37,7 @@ def ModelSimple(req_file = './../../PIE_SXS10_data/nominal/scenario_10SAT_nomina
     model = cp_model.CpModel()
     # [END model]
 
+    '''
     for i in range(len(data_visib_df['Ant'])) :
         name = data_visib_df['Ant'][i]
         ID = int(name.strip('ANT'))
@@ -47,6 +49,7 @@ def ModelSimple(req_file = './../../PIE_SXS10_data/nominal/scenario_10SAT_nomina
         else:
             d_ants[ID] = []
             d_ants[ID].append(model.NewIntervalVar(start,end-start,end,str(1)))
+    '''
 
     # construct the matrix for visib
     # initialize
@@ -82,7 +85,7 @@ def ModelSimple(req_file = './../../PIE_SXS10_data/nominal/scenario_10SAT_nomina
     # print("@Visibility dictionary : \n", dict_visib_df)
 
     print("-->FINISHED<--\n")
-    results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_antennes)
+    results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes)
     print("==>END MODEL<==\n")
     return dict_data_df,list_sats,list_antennes,results
 
