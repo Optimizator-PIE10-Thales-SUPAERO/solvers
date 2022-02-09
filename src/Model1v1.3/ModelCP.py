@@ -185,8 +185,8 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
 
 
     # Constraint 5: time margin between interval used should be bounded by min lag and max lag
-    print("Contraint5: Time margin between interval used should be bounded by min lag and max lag")
-
+    print("(ignore for now)Contraint5: Time margin between interval used should be bounded by min lag and max lag")
+    '''
     for task_id in range(n_tasks):
         min_lag = dict_min_lag[task_id]
         max_lag = dict_max_lag[task_id]
@@ -210,6 +210,8 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
                 
                 tmp_bool_list = [bool_var1,bool_var2,bool_var3,bool_var4]
                 model.Add(sum(tmp_bool_list) >= 1)
+    '''
+
 
     print("-->FINISED<--")
     # [END constraints]
