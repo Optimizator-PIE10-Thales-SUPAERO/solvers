@@ -85,6 +85,8 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     # print("@Visibility dictionary : \n", dict_visib_df)
 
     print("-->FINISHED<--\n")
+
+    # TODO : reduce the list sat and list antennes, because we don't need all of them
     results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes,req_file)
     print("==>END MODEL<==\n")
     return dict_data_df,list_sats,list_antennes,results
