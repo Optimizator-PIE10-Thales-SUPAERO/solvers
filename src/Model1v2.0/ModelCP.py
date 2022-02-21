@@ -210,7 +210,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 tmp_c2.append(t_bool)
                 bool_in_each_occ.append(t_bool) # condition 1
             # each occ/rep, there is only one antenne lancé 
-            # model.Add(sum(bool_in_each_occ) == 1)# condiction 1
+            model.Add(sum(bool_in_each_occ) == 1)# condiction 1
         # sum of occ is equal to variable rep
         model.Add(sum(tmp_c2) == variables_rep[task_id])
         # sum of duration is equal to required duration * variable rep
@@ -358,12 +358,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
             output += sol_line
 
         parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
-        with open('result_'+parsed[2]+'.txt', 'rw') as f:
-            f.write('-->Statistics<--')
-            f.write(f'  status   : {solver.StatusName(status)}')
-            f.write(f'  conflicts: {solver.NumConflicts()}')
-            f.write(f'  branches : {solver.NumBranches()}')
-            f.write(f'  wall time: {solver.WallTime()} s')
+        with open('results/'+parsed[1]+'.txt', 'w+') as f:
+            f.write('-->Statistics<--\n')
+            f.write(f'  status   : {solver.StatusName(status)}\n')
+            f.write(f'  conflicts: {solver.NumConflicts()}\n')
+            f.write(f'  branches : {solver.NumBranches()}\n')
+            f.write(f'  wall time: {solver.WallTime()} s\n')
+            f.write(f'Optimal score : {solver.ObjectiveValue()}\n\n')
             f.write(output)
         print('\n-->RESULTS<--')
         print(f'Optimal score : {solver.ObjectiveValue()}')
