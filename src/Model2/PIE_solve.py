@@ -219,6 +219,35 @@ def Solver_PIE(version, data_input_path, data_output_path):
                 model.Add(sum(temp_union)<=1) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
             if version == "complex":
                 model.Add(sum(temp_union)<=N)
+<<<<<<< HEAD
+=======
+                
+        # Add priority task transfer order limit
+        # if version == "complex":
+        #     for i in range(len(ts_list)):
+        #         pri_ts = priority_list[i]
+        #         for j in range(i+1, len(ts_list)):
+        #             temp_union_pri = []
+        #             ts_bool_equal_1 = model.NewBoolVar("tempvar_bool_not_equal-1")
+        #             model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
+        #             ts_bool_pri = model.NewBoolVar("tempvar_bool_priority")
+        #             if (pri_ts<priority_list[j]):
+        #                 model.Add(ts[i]<ts[j]).OnlyEnforceIf(ts_bool_pri)
+        #             if (pri_ts>priority_list[j]):
+        #                 model.Add(ts[i]>ts[j]).OnlyEnforceIf(ts_bool_pri)
+        #             temp_union_pri.append(ts_bool_equal_1)
+        #             temp_union_pri.append(ts_bool_pri)
+        #             model.Add(sum(temp_union_pri)==1)
+
+        # Add a limit that each task can only be transferred N times
+        # if version == "simple":
+        #     model.Add(sum(ts_bool_and_list)==1)
+        #     model.Add(sum(ts_bool_negative_list)==(nb_antenne-1))
+        # if version == "complex":
+        #     model.Add(sum(ts_bool_and_list)==N)
+        #     model.Add(sum(ts_bool_negative_list)==(nb_antenne-N)) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
+               
+>>>>>>> dbb3d9d2ff729aba5ae3c553cd6ea8e99381a167
         model.Add(sum(ts_bool_and_list)==N)
         model.Add(sum(ts_bool_negative_list)==(nb_antenne-N))
         ts_list_2d_par_tache.append(ts_list)  
@@ -271,17 +300,28 @@ def Solver_PIE(version, data_input_path, data_output_path):
             ts_ant_list[sat_index].append(ts_temp)
         for duration_temp in duration_list_TEMP:
             duration_ant_list[sat_index].append(duration_temp)
+<<<<<<< HEAD
 
     # Add the limitation that the same satelite can only transmit 1 message at one time
     
     for sat in sat_list_temp:
         sat_index = sat_list_temp.index(sat)
         ts_list = ts_ant_list[sat_index]
+=======
+    for sat in sat_list_temp:
+        sat_index = sat_list_temp.index(sat)
+        ts_list = ts_ant_list[sat_index]
+        # print (ts_list)
+>>>>>>> dbb3d9d2ff729aba5ae3c553cd6ea8e99381a167
         duration_list = duration_ant_list[sat_index]
         if (len(ts_list)==0):
             continue
         for i in range(len(ts_list)):
+<<<<<<< HEAD
             ts_bool_equal_1 = model.NewBoolVar("ts_bool_equal_1: %s"% str(ts_list[i]))
+=======
+            ts_bool_equal_1 = model.NewBoolVar("intersect: %s"% str(ts_list[i]))
+>>>>>>> dbb3d9d2ff729aba5ae3c553cd6ea8e99381a167
             model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
             for j in range(i+1,len(ts_list)):
                 temp_bool_union = []

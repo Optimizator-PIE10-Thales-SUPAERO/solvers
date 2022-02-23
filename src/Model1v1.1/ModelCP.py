@@ -1,4 +1,5 @@
 import collections
+import math
 from ortools.sat.python import cp_model
 
 """Print intermediate solutions."""
@@ -29,7 +30,22 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # bounds for time
     upper_bound = 1175490
     lower_bound = 0
+    # duration
+    dict_duration = dict_data['Duration']
+    # priorities collections
+    dict_priorities = dict_data['Priority']
+    # reperitive collections
+    dict_repetitive = dict_data['Repetitive']
+    dict_occ = dict_data['Number occ']
+    print(dict_data['Duration'])
+    dict_max_repetive = {}
+    for key in dict_duration:
+        if dict_occ[key] == -1:
+            dict_max_repetive[key] = math.floor(upper_bound/(dict_duration[key]+25200))
+        else:
+            dict_max_repetive[key] = 1
 
+    print(dict_max_repetive)
     # Creates the variables.
     # [START variables]
     num_vals = n_tasks*n_antennes
@@ -43,6 +59,9 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # Creates job intervals and add to the corresponding lists.
     variables_matrix = {}
 
+    # variables for repetitive
+    variables_rep = {}
+
     # time periods in each antenne
     intervals_in_antenne = collections.defaultdict(list)
 
@@ -54,6 +73,9 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
     # Note that, here the index of task is related to the position, instead of real ID
     for task_id in range(n_tasks):
         list_task = []
+        # variables of repetitive
+        rep = model.NewIntVar(1,dict_max_repetive[task_id],'rep_%i'%task_id)
+        variables_rep[task_id] = rep
         for antenne_id in list_antennes:
             suffix = '_%i_%i' % (task_id, antenne_id)
             start_var = model.NewIntVar(lower_bound, upper_bound, 'start' + suffix)
@@ -87,7 +109,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
         """
         model.Add(sum([i.end - i.start for i in intervals_in_task[task_id]]) == int(dict_data['Duration'][task_id]))
         """
-        model.Add(sum([variables_matrix[task_id,j].end - variables_matrix[task_id,j].start for j in intervals_in_antenne]) == int(dict_data['Duration'][task_id]))
+        # model.Add(sum([variables_matrix[task_id,j].end - variables_matrix[task_id,j].start for j in intervals_in_antenne]) == int(dict_data['Duration'][task_id]))
         # Contraint 2 : pour chaque satellite
         """
         model.AddNoOverlap([i.interval for i in intervals_in_task[task_id]])
@@ -140,22 +162,29 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
             model.Add(t_bool_and==1).OnlyEnforceIf(t_bool)
             """
             tmp_c2.append(t_bool)
-        model.Add(sum(tmp_c2) == 1)
+        model.Add(sum(tmp_c2) == variables_rep[task_id])
 
 
     print("-->FINISED<--")
     # [END constraints]
 
     # [START objective]
-    obj_var = model.NewIntVar(lower_bound,upper_bound,'objective')
-    # sat_id = int(dict_data['Satellite'][task_id].strip('SAT'))
+    # obj_var = model.NewIntVar(lower_bound,upper_bound,'objective') # CP solver is limited to Integer
+    # objective 1 : min max end time of all tasks
 
+    """
     model.AddMaxEquality(obj_var,[
         variables_matrix[task_id,antenne_id].end
         for task_id in range(n_tasks) for antenne_id in list_antennes
     ])
 
     model.Minimize(obj_var)
+    """
+
+    # objective 2: max score := 1/priority * 1000 * repetitives
+    model.Maximize(sum([int(1 / dict_priorities[task_id] * 1000) * variables_rep[task_id] 
+                        for task_id in range(n_tasks)]))
+    
     # [END objective]
 
     # Creates a solver and solves the model.
@@ -227,7 +256,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_antennes):
             output += sol_line_antennes
             output += sol_line
         print('\n-->RESULTS<--')
-        print(f'Optimal time usage : {solver.ObjectiveValue()}')
+        print(f'Optimal score : {solver.ObjectiveValue()}')
         print(output)
         # print(return_dict)
         print('-->FINISHED<--\n')

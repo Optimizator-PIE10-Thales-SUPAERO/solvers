@@ -7,8 +7,8 @@ from helper import *
 from ModelCP import *
 from checker import CheckerInOne as check
 
-def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
-                visib_file = './../PIE_SXS10_data/visibilities_test.txt'):
+def ModelSimple(req_file = './../../PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
+                visib_file = './../../PIE_SXS10_data/visibilities_test.txt'):
     parser_req = pfr(req_file)
     parser_visib = pfv(visib_file)
 
@@ -23,6 +23,7 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
 
     print("@Requirements are: \n",data_df)
     print("@Visibilities are: \n",data_visib_df)
+    print("@list of satellites are: \n",list_sats)
     print("@list of antennes: \n", list_antennes)
 
     # construct objects of Ant
@@ -36,6 +37,7 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
     model = cp_model.CpModel()
     # [END model]
 
+    '''
     for i in range(len(data_visib_df['Ant'])) :
         name = data_visib_df['Ant'][i]
         ID = int(name.strip('ANT'))
@@ -47,6 +49,7 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
         else:
             d_ants[ID] = []
             d_ants[ID].append(model.NewIntervalVar(start,end-start,end,str(1)))
+    '''
 
     # construct the matrix for visib
     # initialize
@@ -86,7 +89,7 @@ def ModelSimple(req_file = './../PIE_SXS10_data/nominal/scenario_10SAT_nominal_e
     print("==>END MODEL<==\n")
     return dict_data_df,list_sats,list_antennes,results
 
-def ModelNominalV1(req_file,visib_file='./../PIE_SXS10_data/visibilities.txt'):
+def ModelNominalV1(req_file,visib_file='./../../PIE_SXS10_data/visibilities.txt'):
     return ModelSimple(req_file,visib_file)
 
 if __name__ == '__main__':
@@ -106,5 +109,7 @@ if __name__ == '__main__':
         print("Wrong arguments")
     print("==>START CHECKING<==")
     # print(dict_req)
+    print("-->results are<--")
+    print(dict_req)
     check(dict_req,list_sats,list_ants,dict_res)
     print("==>END CHECKING<==")
