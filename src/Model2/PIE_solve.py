@@ -13,6 +13,7 @@ import datetime as dt
 import plotly
 import plotly.express as px
 
+
 def write_file(solver, visibility, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path):
 
     book = xlwt.Workbook(encoding='utf-8')
@@ -218,7 +219,13 @@ def Solver_PIE(version, data_input_path, data_output_path):
                 model.Add(sum(temp_union)<=1) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
             if version == "complex":
                 model.Add(sum(temp_union)<=N)
-                
+        model.Add(sum(ts_bool_and_list)==N)
+        model.Add(sum(ts_bool_negative_list)==(nb_antenne-N))
+        ts_list_2d_par_tache.append(ts_list)  
+        obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
+        model.AddMaxEquality(obj_var_chaque_tache, ts_list)
+        obj_var_tache_list.append(obj_var_chaque_tache)
+
         # Add priority task transfer order limit
         # if version == "complex":
         #     for i in range(len(ts_list)):
@@ -243,13 +250,7 @@ def Solver_PIE(version, data_input_path, data_output_path):
         # if version == "complex":
         #     model.Add(sum(ts_bool_and_list)==N)
         #     model.Add(sum(ts_bool_negative_list)==(nb_antenne-N)) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
-               
-        model.Add(sum(ts_bool_and_list)==N)
-        model.Add(sum(ts_bool_negative_list)==(nb_antenne-N))
-        ts_list_2d_par_tache.append(ts_list)  
-        obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
-        model.AddMaxEquality(obj_var_chaque_tache, ts_list)
-        obj_var_tache_list.append(obj_var_chaque_tache)
+           
 
     # Add the limitation that the same antenne cannot transmit two tache at the same time
     ts_ant_list = []
@@ -270,15 +271,17 @@ def Solver_PIE(version, data_input_path, data_output_path):
             ts_ant_list[sat_index].append(ts_temp)
         for duration_temp in duration_list_TEMP:
             duration_ant_list[sat_index].append(duration_temp)
+
+    # Add the limitation that the same satelite can only transmit 1 message at one time
+    
     for sat in sat_list_temp:
         sat_index = sat_list_temp.index(sat)
         ts_list = ts_ant_list[sat_index]
-        # print (ts_list)
         duration_list = duration_ant_list[sat_index]
         if (len(ts_list)==0):
             continue
         for i in range(len(ts_list)):
-            ts_bool_equal_1 = model.NewBoolVar("intersect: %s"% str(ts_list[i]))
+            ts_bool_equal_1 = model.NewBoolVar("ts_bool_equal_1: %s"% str(ts_list[i]))
             model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
             for j in range(i+1,len(ts_list)):
                 temp_bool_union = []
