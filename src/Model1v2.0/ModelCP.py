@@ -260,10 +260,11 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     model.Minimize(obj_var)
     """
 
+    
     # objective 2: max score := 1/priority * 1000 * repetitives
     model.Maximize(sum([int(1 / dict_priorities[task_id] * 1000) * variables_rep[task_id] 
                         for task_id in range(n_tasks)]))
-    
+
     # [END objective]
 
     # Creates a solver and solves the model.

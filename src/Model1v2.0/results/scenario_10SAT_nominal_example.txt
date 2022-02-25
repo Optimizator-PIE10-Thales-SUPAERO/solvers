@@ -1,8 +1,8 @@
 -->Statistics<--
   status   : OPTIMAL
-  conflicts: 490
-  branches : 9620
-  wall time: 13.725045727000001 s
+  conflicts: 440
+  branches : 9021
+  wall time: 12.332868676 s
 Optimal score : 15375.0
 
 TASK0:  

@@ -17,12 +17,34 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
 
     # parameters
     n_tasks = len(data_df['Task number'])
-    list_sats = [int(i.strip('SAT')) for i in data_visib_df.Sat.unique().tolist()]
-    list_antennes = [int(i.strip('ANT')) for i in data_visib_df.Ant.unique().tolist()]
+    """
+    get sats and ants from visib_file
+    """
+    list_sats_visib = [int(i.strip('SAT')) for i in data_visib_df.Sat.unique().tolist()]
+    list_antennes_visib = [int(i.strip('ANT')) for i in data_visib_df.Ant.unique().tolist()]
+    dict_sat_ants = collections.defaultdict(list) 
+    for i in range(len(data_visib_df)):
+        if data_visib_df.Ant[i] not in dict_sat_ants[data_visib_df.Sat[i]]:
+            dict_sat_ants[data_visib_df.Sat[i]].append(data_visib_df.Ant[i])
+
+    n_antennes_visib = len(list_antennes_visib)
+
+    print("@Visibilities are: \n",data_visib_df)
+    # print("@Satellite and all its visiable antennes: \n",dict_sat_ants)
+
+    """
+    get sats and ants according to requirements
+    """
+    list_sats_names = data_df.Satellite.unique().tolist()
+    list_sats = [int(i.strip('SAT')) for i in list_sats_names]
+    list_antennes = []
+    for sat in list_sats_names:
+        if sat in dict_sat_ants:
+            list_antennes = list_antennes + dict_sat_ants[sat]
+    list_antennes = [int(i.strip('ANT')) for i in unique(list_antennes)]
     n_antennes = len(list_antennes)
 
     print("@Requirements are: \n",data_df)
-    print("@Visibilities are: \n",data_visib_df)
     print("@list of satellites: \n",list_sats)
     print("@list of antennes: \n", list_antennes)
 
@@ -70,7 +92,7 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     # change keys for dict_non_visib
     oldkeys = dict_non_visib.keys()
     for sat,ant in list(oldkeys):
-        sat_id = int(sat.replace("SAT",""))
+        sat_id = int(sat.replace("SAT","")) # or int(sat.strip("SAT"))
         ant_id = int(ant.replace("ANT",""))
         new_key = (sat_id,ant_id)
         dict_non_visib[new_key] = dict_non_visib.pop((sat,ant))
