@@ -6,7 +6,6 @@ from Parser import ParserForVisibilities as pfv
 from helper import *
 from ModelCP import *
 from checker import CheckerInOne as check
-from Gantt import *
 
 def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
                 visib_file = './PIE_SXS10_data/visibilities_test.txt'):
@@ -23,10 +22,13 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     """
     list_sats_visib = [int(i.strip('SAT')) for i in data_visib_df.Sat.unique().tolist()]
     list_antennes_visib = [int(i.strip('ANT')) for i in data_visib_df.Ant.unique().tolist()]
-    dict_sat_ants = collections.defaultdict(list) 
+    dict_sat_ants = collections.defaultdict(list)
+    dict_ant_sats = collections.defaultdict(list)
     for i in range(len(data_visib_df)):
-        if data_visib_df.Ant[i] not in dict_sat_ants[data_visib_df.Sat[i]]:
-            dict_sat_ants[data_visib_df.Sat[i]].append(data_visib_df.Ant[i])
+        sat_id = int(data_visib_df.Sat[i].strip('SAT'))
+        ant_id = int(data_visib_df.Ant[i].strip('ANT'))
+        if ant_id not in dict_sat_ants[sat_id]:
+            dict_sat_ants[sat_id].append(ant_id)
 
     n_antennes_visib = len(list_antennes_visib)
 
@@ -39,15 +41,22 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     list_sats_names = data_df.Satellite.unique().tolist()
     list_sats = [int(i.strip('SAT')) for i in list_sats_names]
     list_antennes = []
-    for sat in list_sats_names:
+    for sat in list_sats:
         if sat in dict_sat_ants:
             list_antennes = list_antennes + dict_sat_ants[sat]
-    list_antennes = [int(i.strip('ANT')) for i in unique(list_antennes)]
+    list_antennes = [i for i in unique(list_antennes)]
     n_antennes = len(list_antennes)
+
+    for ant in list_antennes:
+        for sat in list_sats:
+            if ant in dict_sat_ants[sat]:
+                dict_ant_sats[ant].append(sat)
 
     print("@Requirements are: \n",data_df)
     print("@list of satellites: \n",list_sats)
     print("@list of antennes: \n", list_antennes)
+    print("@dict of sat_ant: \n", dict_sat_ants)
+    print("@dict of ant_sat: \n", dict_ant_sats)
 
     # construct objects of Ant
     d_ants = {}
@@ -110,7 +119,7 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     print("-->FINISHED<--\n")
 
     # TODO : reduce the list sat and list antennes, because we don't need all of them
-    results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes,req_file)
+    results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes,dict_sat_ants,dict_ant_sats,req_file)
     print("==>END MODEL<==\n")
     return dict_data_df,list_sats,list_antennes,results
 
@@ -136,6 +145,5 @@ if __name__ == '__main__':
     # print(dict_req)
     print("-->results are<--")
     print(dict_req)
-    if check(dict_req,list_sats,list_ants,dict_res):
-        GanttForTask(dict_res)
+    check(dict_req,list_sats,list_ants,dict_res)
     print("==>END CHECKING<==")

@@ -1,0 +1,6 @@
+Satellite list
+SAT1	SAT2	SAT3
+ Task number     Satellite      Priority      Duration      Earliest        Latest    Repetitive    Number occ  Min time lag  Max time lag
+       TASK0         SAT1             8          3000             0       1207749             1            -1         25200         43200
+       TASK1         SAT2             8          3000             0       1207620             1            -1         25200         43200
+       TASK2         SAT3             8          3000             0       1207790             1            -1         25200         43200

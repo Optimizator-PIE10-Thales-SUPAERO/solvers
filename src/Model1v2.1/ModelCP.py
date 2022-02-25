@@ -7,7 +7,6 @@ import parse
 
 """
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-
     def __init__(self, variables):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
@@ -24,7 +23,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 """
 
 """First Version Model"""
-def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,filename):
+def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,dict_sat_ants,dict_ant_sats,filename):
     """ CP-SAT example to showcase calling the solver."""
 
     # number of variables : tasks * antennes
@@ -58,8 +57,11 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
 
     # seperate the tasks by satellites
     groups = collections.defaultdict(list)
+    
+    # TODO : check all task id
     for task_id in dict_satellites:
         groups[dict_satellites[task_id]].append(task_id)
+    print("@dict_satellites",dict_satellites)
     print("@groups by satellites",groups)
 
 
@@ -84,11 +86,12 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
 
     # Note that, here the index of task is related to the position, instead of real ID
     for task_id in range(n_tasks):
+        sat_id = int(dict_satellites[task_id].strip('SAT'))
         list_task = []
         # variables of repetitive
         rep = model.NewIntVar(1,dict_max_repetive[task_id],'rep_%i'%task_id)
         variables_rep[task_id] = rep
-        for antenne_id in list_antennes:
+        for antenne_id in dict_sat_ants[sat_id]:
             suffix = '_%i_%i' % (task_id, antenne_id)
             list_rep_var = []
             for rep_id in range(dict_max_repetive[task_id]):
@@ -115,7 +118,8 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     print("Constraint0: Ask the end time >= start time + min time lag && start time >= 0")
 
     for task_id in range(n_tasks):
-        for antenne_id in list_antennes:
+        sat_id = int(dict_satellites[task_id].strip('SAT'))
+        for antenne_id in dict_sat_ants[sat_id]:
             for rep_id in range(dict_max_repetive[task_id]) :
                 ele = variables_matrix[task_id,antenne_id,rep_id]
                 
@@ -144,7 +148,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
         sat_name = "SAT"+str(sat_id)
         all_time_in_sat = []
         for task_id in groups[sat_name]:
-            for antenne_id in list_antennes:
+            for antenne_id in dict_sat_ants[sat_id]:
                 for rep_id in range(dict_max_repetive[task_id]):
                     ele = variables_matrix[task_id,antenne_id,rep_id]
                     all_time_in_sat.append(ele.interval)
@@ -159,16 +163,21 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
         model.AddNoOverlap(intervals_in_antenne[antenne_id])
         """
         all_time_in_antenne = []
-        for task_id in range(n_tasks):
-            for rep_id in range(dict_max_repetive[task_id]):
-                ele = variables_matrix[task_id,antenne_id,rep_id]
-                all_time_in_antenne.append(ele.interval)
+        list_sats_temp = dict_ant_sats[antenne_id]
+        for sat_id in list_sats_temp:
+            sat_name = "SAT"+str(sat_id)
+            for task_id in groups[sat_name]:
+                for rep_id in range(dict_max_repetive[task_id]):
+                    ele = variables_matrix[task_id,antenne_id,rep_id]
+                    if ele not in all_time_in_antenne: 
+                        all_time_in_antenne.append(ele.interval)
         model.AddNoOverlap(all_time_in_antenne)
 
     # Contraint 3: pour chaque position dans le matrix
     print("Constraint3: No overlap for interval variable and non-visib intervals (not variables) ")
     for task_id in range(n_tasks):
-        for antenne_id in list_antennes:
+        sat_id = int(dict_satellites[task_id].strip('SAT'))
+        for antenne_id in dict_sat_ants[sat_id]:
             if (task_id+1,antenne_id) in dict_non_visib.keys():
                 list_intervals = dict_non_visib[task_id+1,antenne_id]
                 # print(list_intervals)
@@ -198,11 +207,12 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     print("Constraint4: The duration and repetition requirements ")
     for task_id in range(n_tasks):
         tmp_c2 = []
+        sat_id = int(dict_satellites[task_id].strip('SAT'))
         duration = int(dict_duration[task_id])
         list_duration = []
         for rep_id in range(dict_max_repetive[task_id]):
             bool_in_each_occ = []
-            for antenne_id in list_antennes:
+            for antenne_id in dict_sat_ants[sat_id]:
                 time = variables_matrix[task_id,antenne_id,rep_id]
                 t_bool = model.NewBoolVar("t_c2_"+str(task_id) + str(antenne_id) + str(rep_id))
                 model.Add((time.end - time.start - dict_min_lag[task_id]) == duration).OnlyEnforceIf(t_bool) # don't forget to consider min time lag here
@@ -298,7 +308,8 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     # create one list of assigned intervals for each task:
     assigned_intervals = collections.defaultdict(list)
     for task_id in range(n_tasks):
-        for antenne_id in list_antennes:
+        sat_id = int(dict_satellites[task_id].strip('SAT'))
+        for antenne_id in dict_sat_ants[sat_id]:
             for rep_id in range(dict_max_repetive[task_id]):
                 time = variables_matrix[task_id,antenne_id,rep_id]
                 assigned_intervals[task_id].append(
@@ -359,7 +370,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
             output += sol_line
 
         parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
-        with open('results/'+parsed[1]+'shorttime.txt', 'w+') as f:
+        with open('results/'+parsed[1]+'short_time.txt', 'w+') as f:
             f.write('-->Statistics<--\n')
             f.write(f'  status   : {solver.StatusName(status)}\n')
             f.write(f'  conflicts: {solver.NumConflicts()}\n')
