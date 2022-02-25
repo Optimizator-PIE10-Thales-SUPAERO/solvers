@@ -1,4 +1,5 @@
 from helper import *
+from Gantt import *
 
 """
 To check the periods of each task
@@ -18,6 +19,7 @@ def Period_Checker(dict_req, dict_res):
             return False
         # print(duration_res)
     """
+    GanttForTask(dict_res)
     return True
 
 """
@@ -48,16 +50,11 @@ def Priority_Checker(dict_req, dict_res):
 def CheckerInOne(dict_req, list_sat,list_ant, dict_res):
     if not Period_Checker(dict_req,dict_res):
         print('Checking periods failed.')
-        return False
     elif not Antenne_Checker(list_ant,dict_res):
         print('Checking antennes failed.')
-        return False
     elif not Satellite_Checker(list_sat,dict_res):
         print('Checking satellites failed.')
-        return False
     elif not Priority_Checker(dict_req,dict_res):
         print('Checking priorities failed.')
-        return False
     else:
         print('Everything is ok!')
-        return True
