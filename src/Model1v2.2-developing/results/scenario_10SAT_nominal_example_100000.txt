@@ -1,0 +1,22 @@
+-->Statistics<--
+  status   : OPTIMAL
+  conflicts: 50
+  branches : 181
+  wall time: 0.027723351 s
+Optimal score : 1125.0
+
+TASK0:  
+SAT1_ANT1_OCC0      [56407,84607]  
+SAT1_ANT1_OCC2      [28207,56407]  
+SAT1_ANT2_OCC1      [5,28205]      
+
+TASK1:  
+SAT2_ANT1_OCC2      [2,28202]      
+SAT2_ANT2_OCC0      [62576,90776]  
+SAT2_ANT3_OCC1      [34376,62576]  
+
+TASK2:  
+SAT3_ANT2_OCC1      [34376,62576]  
+SAT3_ANT3_OCC0      [4,28204]      
+SAT3_ANT3_OCC2      [62576,90776]  
+
