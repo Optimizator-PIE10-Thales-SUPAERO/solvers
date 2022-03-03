@@ -19,7 +19,7 @@ class ParserForRequirements():
     def read_list_sat(self):
         #'./PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt'
         self.lines = self.open_file()
-        list_sat = self.lines[1].strip().split('\t')
+        list_sat = [int(i.strip('SAT')) for i in self.lines[1].strip().split('\t')]
         return list_sat
 
     def get_requirements_data(self):

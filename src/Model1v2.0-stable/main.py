@@ -38,7 +38,8 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     get sats and ants according to requirements
     """
     list_sats_names = data_df.Satellite.unique().tolist()
-    list_sats = [int(i.strip('SAT')) for i in list_sats_names]
+    # list_sats = [int(i.strip('SAT')) for i in list_sats_names]
+    list_sats = parser_req.read_list_sat()
     list_antennes = []
     for sat in list_sats_names:
         if sat in dict_sat_ants:

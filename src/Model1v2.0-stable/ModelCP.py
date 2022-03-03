@@ -4,25 +4,6 @@ from ortools.sat.python import cp_model
 import parse
 
 
-"""
-class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-
-    def __init__(self, variables):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
-
-    def on_solution_callback(self):
-        self.__solution_count += 1
-        for v in self.__variables:
-            print('%s=%i' % (v, self.Value(v)), end=' ')
-        print()
-
-    def solution_count(self):
-        return self.__solution_count
-"""
-
-"""First Version Model"""
 def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,filename):
     """ CP-SAT example to showcase calling the solver."""
 
@@ -50,7 +31,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     dict_max_repetive = {}
     for key in dict_duration:
         if dict_occ[key] == -1:
-            dict_max_repetive[key] = math.floor(upper_bound/(dict_duration[key]+25200))
+            dict_max_repetive[key] = math.floor(upper_bound/(dict_duration[key]+dict_min_lag[key]))
         else:
             dict_max_repetive[key] = 1
     print("@dict_max_repetive:\n",dict_max_repetive)
@@ -112,18 +93,17 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     
     print("-->CONTRAINTS<--")
 
-    print("Constraint0: Ask the end time >= start time + min time lag && start time >= 0")
-
+    """
+    print("Constraint0: Ask the start time >= 0")
+    # Belows are not used constraints, because they are limited in other ways later in constraint 4 and constraint 6
     for task_id in range(n_tasks):
         for antenne_id in list_antennes:
             for rep_id in range(dict_max_repetive[task_id]) :
                 ele = variables_matrix[task_id,antenne_id,rep_id]
-                
+                ''' 
                 bool1 = model.NewBoolVar("c0_b1_"+str(task_id)+str(antenne_id)+str(rep_id))
                 bool2 = model.NewBoolVar("c0_b2_"+str(task_id)+str(antenne_id)+str(rep_id))
                 
-                # Belows are not used constraints, because they are limited in other ways later
-                '''
                 model.Add(ele.end == ele.start + dict_min_lag[task_id]).OnlyEnforceIf(bool1)
                 model.Add(ele.end == ele.start + dict_min_lag[task_id] + int(dict_duration[task_id])).OnlyEnforceIf(bool2)
                 '''
@@ -135,21 +115,23 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 model.Add(sum(temp_bool)==1)
                 '''                
                 # model.Add(ele.end - ele.start >= dict_min_lag[task_id])
-                model.Add(ele.start >= 0)
+                model.Add(ele.start >= lower_bound)
+    """
 
     print("Constraint1: No overlap for all intervals of each task/satellite")
     # Constraint 1 : pour chaque tache
     # Constraint 1.5 : pour chaque satellite (include constraint1)
 
     for sat_id in list_sats :
-        sat_name = "SAT"+str(sat_id)
+        # sat_name = "SAT"+str(sat_id) # this is wrong
+        sat_name = "SAT"+str(sat_id) if sat_id > 10 else "SAT0"+str(sat_id)
         all_time_in_sat = []
-        for task_id in groups[sat_name]:
+        for task_id in groups[sat_name]: # find task id by satellite name
             for antenne_id in list_antennes:
                 for rep_id in range(dict_max_repetive[task_id]):
                     ele = variables_matrix[task_id,antenne_id,rep_id]
                     all_time_in_sat.append(ele.interval)
-                    dict_occ_task[task_id].append(ele)
+                    # dict_occ_task[task_id].append(ele) # used in constraint 5, ignored for now
         model.AddNoOverlap(all_time_in_sat)
 
     print("Constraint2: No overlap for all intervals of each antenne")
@@ -176,10 +158,9 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                         time = variables_matrix[task_id,antenne_id,rep_id]
                         t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         t2_bool = model.NewBoolVar("t2_"+str(task_id)+str(antenne_id)+str(s)+str(e))
-                        # First Try
+                        # have to create two new values to control that there is only one true
                         model.Add(time.start > e).OnlyEnforceIf(t1_bool)
                         model.Add(time.end < s).OnlyEnforceIf(t2_bool)
-
                         t1_bool_and = model.NewBoolVar("t1_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         t2_bool_and = model.NewBoolVar("t2_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         model.Add(t1_bool_and==1).OnlyEnforceIf(t1_bool)
@@ -187,12 +168,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                         tmp_t1_t2 = []
                         tmp_t1_t2.append(t1_bool_and)
                         tmp_t1_t2.append(t2_bool_and)
+ 
                         model.Add(sum(tmp_t1_t2) == 1)
 
     # Contraint 4: Repetition is consider and each duration is fixed
     # pour tous les antennes de chaque tâche, il y a qu'un interval qui a une durée et les autres sont null.
     
-    # condition 1 : if we don't care about the distribution of antennes for each occurrence.
+    # condition 1 : if we don't care about the distribution of antennes for each occurrence, then commit all condition 1 below.
     print("Constraint4: The duration and repetition requirements ")
     for task_id in range(n_tasks):
         tmp_c2 = []
@@ -340,6 +322,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
             sol_line = ''
             for assign in assigned_intervals[task_id]:
                 dict_task = {}
+                # cannot use %i to get name of sat, because SAT1 is incorrect, SAT01 is correct
                 sat_name = dict_satellites[assign.task]
                 ant_name = 'ANT%i' % assign.antenne
                 occ_name = 'OCC%i' % assign.occ
