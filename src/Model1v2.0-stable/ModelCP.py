@@ -3,7 +3,6 @@ import math
 from ortools.sat.python import cp_model
 import parse
 
-"""Print intermediate solutions."""
 
 """
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -83,6 +82,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     dict_occ_task = collections.defaultdict(list)
 
     # Note that, here the index of task is related to the position, instead of real ID
+    
     for task_id in range(n_tasks):
         list_task = []
         # variables of repetitive
@@ -121,20 +121,21 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 
                 bool1 = model.NewBoolVar("c0_b1_"+str(task_id)+str(antenne_id)+str(rep_id))
                 bool2 = model.NewBoolVar("c0_b2_"+str(task_id)+str(antenne_id)+str(rep_id))
-                """
+                
+                # Belows are not used constraints, because they are limited in other ways later
+                '''
                 model.Add(ele.end == ele.start + dict_min_lag[task_id]).OnlyEnforceIf(bool1)
                 model.Add(ele.end == ele.start + dict_min_lag[task_id] + int(dict_duration[task_id])).OnlyEnforceIf(bool2)
-                """
-                """
+                '''
+                '''
                 model.Add(ele.end == ele.start).OnlyEnforceIf(bool1)
                 model.Add(ele.end == ele.start + int(dict_duration[task_id])).OnlyEnforceIf(bool2)
                 
                 temp_bool = [bool1,bool2]
                 model.Add(sum(temp_bool)==1)
-                """                
+                '''                
                 # model.Add(ele.end - ele.start >= dict_min_lag[task_id])
                 model.Add(ele.start >= 0)
-
 
     print("Constraint1: No overlap for all intervals of each task/satellite")
     # Constraint 1 : pour chaque tache
@@ -155,9 +156,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     # Contraint 2 : pour chaque antenne
     for antenne_id in list_antennes:
         # print(intervals_in_antenne[antenne_id])
-        """
-        model.AddNoOverlap(intervals_in_antenne[antenne_id])
-        """
+        # model.AddNoOverlap(intervals_in_antenne[antenne_id])
         all_time_in_antenne = []
         for task_id in range(n_tasks):
             for rep_id in range(dict_max_repetive[task_id]):
@@ -189,12 +188,11 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                         tmp_t1_t2.append(t1_bool_and)
                         tmp_t1_t2.append(t2_bool_and)
                         model.Add(sum(tmp_t1_t2) == 1)
-    
+
     # Contraint 4: Repetition is consider and each duration is fixed
     # pour tous les antennes de chaque tâche, il y a qu'un interval qui a une durée et les autres sont null.
     
     # condition 1 : if we don't care about the distribution of antennes for each occurrence.
-
     print("Constraint4: The duration and repetition requirements ")
     for task_id in range(n_tasks):
         tmp_c2 = []
@@ -216,6 +214,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
         # sum of duration is equal to required duration * variable rep
         model.Add(sum(list_duration) == (duration+dict_min_lag[task_id]) * variables_rep[task_id]) 
     
+
     # Constraint 5: time margin between interval used should be bounded by min lag and max lag
     print("(ignore for now) Contraint5: Time margin between interval used should be bounded by min lag and max lag")
     
@@ -243,6 +242,20 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 tmp_bool_list = [bool_var1,bool_var2,bool_var3,bool_var4]
                 model.Add(sum(tmp_bool_list) >= 1)
     '''
+
+    # constraint 6: used for nominal with one off or intermidiate scenarios
+    print("constraint6: all execution should between Earliest and Latest")
+    
+    for task_id in range(n_tasks):
+        earliest = dict_data["Earliest"][task_id]
+        latest = dict_data["Latest"][task_id]
+        for antenne_id in list_antennes:
+            for rep_id in range(dict_max_repetive[task_id]) :
+                ele = variables_matrix[task_id,antenne_id,rep_id]
+                model.Add(ele.start >= earliest)
+                model.Add(ele.end <= latest)
+
+
 
     print("-->FINISED<--")
     # [END constraints]
@@ -314,7 +327,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     assigned_repetition = []
     for task_id in range(n_tasks):
         assigned_repetition.append(solver.Value(variables_rep[task_id]))
-
+    # print("@assigned intervals are:\n",assigned_intervals)
     print("@assigned repetition for each task:\n",assigned_repetition)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
@@ -327,7 +340,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
             sol_line = ''
             for assign in assigned_intervals[task_id]:
                 dict_task = {}
-                sat_name = "SAT%i" % list_sats[assign.task]
+                sat_name = dict_satellites[assign.task]
                 ant_name = 'ANT%i' % assign.antenne
                 occ_name = 'OCC%i' % assign.occ
 
@@ -359,7 +372,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
             output += sol_line
 
         parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
-        with open('results/'+parsed[1]+'shorttime.txt', 'w+') as f:
+        with open('results/'+parsed[1]+'_'+str(upper_bound)+'.txt', 'w+') as f:
             f.write('-->Statistics<--\n')
             f.write(f'  status   : {solver.StatusName(status)}\n')
             f.write(f'  conflicts: {solver.NumConflicts()}\n')

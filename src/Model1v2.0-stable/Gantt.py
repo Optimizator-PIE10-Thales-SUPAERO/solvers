@@ -36,7 +36,7 @@ colors = {
     'ANT16': 'rgb(20, 12, 190)'
 }
 
-def GanttForTask(dict_res):
+def GanttForTask(dict_res,fig_name):
 
     part_colors = {}
 
@@ -52,6 +52,7 @@ def GanttForTask(dict_res):
     fig = ff.create_gantt(df,index_col='Resource', colors = part_colors, show_colorbar=True,group_tasks=True)
     fig.update_layout(xaxis_type='linear')
     fig.show()
+    fig.write_image(fig_name)
 
     """
     fig = px.timeline(df, x_start="Start", x_end="Finish", y="Task", color="Resource")

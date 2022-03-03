@@ -7,6 +7,7 @@ from helper import *
 from ModelCP import *
 from checker import CheckerInOne as check
 from Gantt import *
+import parse
 
 def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
                 visib_file = './PIE_SXS10_data/visibilities_test.txt'):
@@ -115,6 +116,7 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
     return dict_data_df,list_sats,list_antennes,results
 
 def ModelNominalV1(req_file,visib_file='./PIE_SXS10_data/visibilities.txt'):
+    print("req file",req_file)
     return ModelSimple(req_file,visib_file)
 
 if __name__ == '__main__':
@@ -124,11 +126,15 @@ if __name__ == '__main__':
     dict_req = {}
     list_sats = []
     list_ants = []
+    filename = ""
     if len(arguments) == 1:
         dict_req,list_sats,list_ants,dict_res = ModelSimple()
+        filename = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt'
     elif len(arguments) == 2:
+        filename = arguments[1]
         dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1])
     elif len(arguments) == 3:
+        filename=arguments[1]
         dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1],arguments[2])
     else:
         print("Wrong arguments")
@@ -137,5 +143,7 @@ if __name__ == '__main__':
     print("-->results are<--")
     print(dict_req)
     if check(dict_req,list_sats,list_ants,dict_res):
-        GanttForTask(dict_res)
+        parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
+        fig_name = 'results/'+parsed[1]+'.png'
+        GanttForTask(dict_res,fig_name)
     print("==>END CHECKING<==")
