@@ -7,6 +7,9 @@ import parse
 def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,filename):
     """ CP-SAT example to showcase calling the solver."""
 
+    # Remember that the task id of dict_data is the index but not the task number
+    # the task number is stored in one column
+    
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
@@ -23,6 +26,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
 
     # satellites
     dict_satellites = dict_data['Satellite']
+    print("@dict of satellites:",dict_satellites)
 
     # min lag and max lag
     dict_min_lag = dict_data['Min time lag']
