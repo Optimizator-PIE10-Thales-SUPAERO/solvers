@@ -145,6 +145,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 ele = variables_matrix[task_id,antenne_id,rep_id]
                 all_time_in_antenne.append(ele.interval)
         model.AddNoOverlap(all_time_in_antenne)
+    
 
     # Contraint 3: pour chaque position dans le matrix
     print("Constraint3: No overlap for interval variable and non-visib intervals (not variables) ")
@@ -176,7 +177,6 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                         model.Add(sum(tmp_t1_t2) == 1)
             else:
                 return 0
-
     # Contraint 4: Repetition is consider and each duration is fixed
     # pour tous les antennes de chaque tâche, il y a qu'un interval qui a une durée et les autres sont null.
     
@@ -193,15 +193,17 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 t_bool = model.NewBoolVar("t_c2_"+str(task_id) + str(antenne_id) + str(rep_id))
                 model.Add((time.end - time.start - dict_min_lag[task_id]) == duration).OnlyEnforceIf(t_bool) # don't forget to consider min time lag here
                 list_duration.append(time.end-time.start)
+                t_bool_count = model.NewBoolVar("t_bool_count_"+str(task_id)+str(antenne_id)+str(rep_id))
+                model.Add(t_bool_count == 1).OnlyEnforceIf(t_bool)
+                # Note that, tmp_c2 and bool_in_each_occ need to append two different variables, if not there will be a bug
                 tmp_c2.append(t_bool)
-                bool_in_each_occ.append(t_bool) # condition 1
+                bool_in_each_occ.append(t_bool_count) # condition 1
             # each occ/rep, there is only one antenne lancé 
             model.Add(sum(bool_in_each_occ) == 1)# condiction 1
         # sum of occ is equal to variable rep
         model.Add(sum(tmp_c2) == variables_rep[task_id])
         # sum of duration is equal to required duration * variable rep
         model.Add(sum(list_duration) == (duration+dict_min_lag[task_id]) * variables_rep[task_id]) 
-    
 
     # Constraint 5: time margin between interval used should be bounded by min lag and max lag
     print("(ignore for now) Contraint5: Time margin between interval used should be bounded by min lag and max lag")
@@ -230,7 +232,6 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 tmp_bool_list = [bool_var1,bool_var2,bool_var3,bool_var4]
                 model.Add(sum(tmp_bool_list) >= 1)
     '''
-
     # constraint 6: used for nominal with one off or intermidiate scenarios
     print("constraint6: all execution should between Earliest and Latest")
     
@@ -243,9 +244,6 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                 model.Add(ele.end>=ele.start) # could be useless
                 model.Add(ele.start >= earliest)
                 model.Add(ele.end <= latest)
-
-
-
     print("-->FINISED<--")
     # [END constraints]
 
