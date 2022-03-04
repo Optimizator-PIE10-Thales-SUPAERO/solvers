@@ -92,7 +92,7 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
 
     dict_non_visib = get_dict_non_visib(dict_visib)
 
-    # change keys for dict_non_visib
+    # change keys for dict_non_visib, from str to int, from name to id
     oldkeys = dict_non_visib.keys()
     for sat,ant in list(oldkeys):
         sat_id = int(sat.replace("SAT","")) # or int(sat.strip("SAT"))

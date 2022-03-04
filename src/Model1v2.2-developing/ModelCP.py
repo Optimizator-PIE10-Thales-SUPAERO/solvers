@@ -161,7 +161,9 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                         t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         t2_bool = model.NewBoolVar("t2_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         # have to create two new values to control that there is only one true
-                        model.Add(time.start > e).OnlyEnforceIf(t1_bool)
+                        # don't forget minus dict_min_lag[task_id]
+                        # there is no need to judge if s == e, because it will not influence the results.
+                        model.Add(time.start > e - dict_min_lag[task_id]).OnlyEnforceIf(t1_bool)
                         model.Add(time.end < s).OnlyEnforceIf(t2_bool)
                         t1_bool_and = model.NewBoolVar("t1_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         t2_bool_and = model.NewBoolVar("t2_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
@@ -238,6 +240,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
         for antenne_id in list_antennes:
             for rep_id in range(dict_max_repetive[task_id]) :
                 ele = variables_matrix[task_id,antenne_id,rep_id]
+                model.Add(ele.end>=ele.start) # could be useless
                 model.Add(ele.start >= earliest)
                 model.Add(ele.end <= latest)
 
@@ -300,6 +303,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
         for antenne_id in list_antennes:
             for rep_id in range(dict_max_repetive[task_id]):
                 time = variables_matrix[task_id,antenne_id,rep_id]
+                # print(time,task_id)
                 assigned_intervals[task_id].append(
                     assigned_antennes_type(start=solver.Value(time.start),
                                            end=solver.Value(time.end),
