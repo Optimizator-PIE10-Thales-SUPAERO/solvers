@@ -80,11 +80,11 @@ def gantt_diagram(data_output_path):
 
     opacity = df ["Opacity"]
     information = df["Name"]
+
     # Create Gantt Chart
     fig = px.timeline(
         df, x_start=time_series_s, x_end=time_series_e, y=tasks, color=color, title="Task Overview", opacity = opacity, hover_name = information
     )
-
     # Upade/Change Layout
     fig.update_yaxes(autorange="reversed")
     fig.update_layout(title_font_size=42, font_size=18, title_font_family="Arial")
@@ -288,7 +288,12 @@ def Solver_PIE(version, data_input_path, data_output_path):
             for ts in tsl:
                 print('%s = %i' % (str(ts),solver.Value(ts)))
             print()
-
+        # Statistics.
+    print('\nStatistics')
+    print(f'  status   : {solver.StatusName(status)}')
+    print(f'  conflicts: {solver.NumConflicts()}')
+    print(f'  branches : {solver.NumBranches()}')
+    print(f'  wall time: {solver.WallTime()} s')
     # Export data from list to excel
     write_file(solver, data_visib_df, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path)
 
@@ -296,7 +301,7 @@ def Solver_PIE(version, data_input_path, data_output_path):
     gantt_diagram(data_output_path)
 def main():
     """Minimal CP-SAT example to showcase calling the solver."""
-    Solver_PIE("complex", ["./PIE_SXS10_data/nominal/scenario_10SAT_nominal_with_oneoff1.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
+    Solver_PIE("complex", ["./PIE_SXS10_data/nominal/scenario_10SAT_nominal_with_oneoff2.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
 
 if __name__ == '__main__':
     main()
