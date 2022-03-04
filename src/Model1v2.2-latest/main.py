@@ -141,10 +141,12 @@ if __name__ == '__main__':
         print("Wrong arguments")
     print("==>START CHECKING<==")
     # print(dict_req)
-    print("-->results are<--")
-    print(dict_req)
+    # print("-->results are<--")
+    # print(dict_res)
     if check(dict_req,list_sats,list_ants,dict_res):
         parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
         fig_name = 'results/'+parsed[1]+'.png'
         GanttForTask(dict_res,fig_name)
+        fig_name2 = 'results/'+parsed[1]+'_T.png'
+        GanttForAntenne(dict_res,dict_req,fig_name2)
     print("==>END CHECKING<==")
