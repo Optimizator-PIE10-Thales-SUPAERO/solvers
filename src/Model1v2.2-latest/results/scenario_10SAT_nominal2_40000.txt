@@ -2,7 +2,7 @@
   status   : OPTIMAL
   conflicts: 0
   branches : 240
-  wall time: 0.08298318 s
+  wall time: 0.079478164 s
 Optimal score : 1250.0
 
 TASK0:  

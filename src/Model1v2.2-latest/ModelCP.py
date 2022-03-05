@@ -10,10 +10,14 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     # Remember that the task id of dict_data is the index but not the task number
     # the task number is stored in one column
     
+    # no occurrence or have occurrence
+    hasOccurrence = 0
+
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
-    upper_bound = 100000 # 1175490
+    # IMPORTANT CONFIGURATION
+    upper_bound = 1209600 # 1175490
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
@@ -33,9 +37,10 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     dict_max_lag = dict_data['Max time lag']
 
     dict_max_repetive = {}
+
     for key in dict_duration:
         if dict_occ[key] == -1:
-            dict_max_repetive[key] = math.floor(upper_bound/(dict_duration[key]+dict_min_lag[key]))
+            dict_max_repetive[key] = 1 if hasOccurrence == 0 else math.floor(upper_bound/(dict_duration[key]+dict_min_lag[key]))
         else:
             dict_max_repetive[key] = 1
     print("@dict_max_repetive:\n",dict_max_repetive)
