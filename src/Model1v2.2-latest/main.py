@@ -9,6 +9,7 @@ from checker import CheckerInOne as check
 from Gantt import *
 import parse
 
+
 def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
                 visib_file = './PIE_SXS10_data/visibilities_test.txt'):
     parser_req = pfr(req_file)
@@ -105,16 +106,16 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
 
     # transfer dataframe of requirements and visibilities dataframe to dictionary
     dict_data_df = data_df.to_dict()
-    dict_visib_df = data_visib_df.to_dict()
+    # dict_visib_df = data_visib_df.to_dict()
     print("@Requirements dictionary : \n",dict_data_df)
-    # print("@Visibility dictionary : \n", dict_visib_df)
+    # print("@Visibility dictionary : \n", dict_visib)
 
     print("-->FINISHED<--\n")
 
     # TODO : reduce the list sat and list antennes, because we don't need all of them
     results = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes,req_file)
     print("==>END MODEL<==\n")
-    return dict_data_df,list_sats,list_antennes,results
+    return dict_visib, dict_data_df,list_sats,list_antennes,results
 
 def ModelNominalV1(req_file,visib_file='./PIE_SXS10_data/visibilities.txt'):
     print("req file",req_file)
@@ -125,18 +126,19 @@ if __name__ == '__main__':
     print(arguments)
     dict_res = {}
     dict_req = {}
+    dict_visib = {}
     list_sats = []
     list_ants = []
     filename = ""
     if len(arguments) == 1:
-        dict_req,list_sats,list_ants,dict_res = ModelSimple()
+        dict_visib,dict_req,list_sats,list_ants,dict_res = ModelSimple()
         filename = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt'
     elif len(arguments) == 2:
         filename = arguments[1]
-        dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1])
+        dict_visib,dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1])
     elif len(arguments) == 3:
         filename=arguments[1]
-        dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1],arguments[2])
+        dict_visib,dict_req,list_sats,list_ants,dict_res = ModelNominalV1(arguments[1],arguments[2])
     else:
         print("Wrong arguments")
     print("==>START CHECKING<==")
@@ -145,6 +147,9 @@ if __name__ == '__main__':
     # print(dict_res)
     if check(dict_req,list_sats,list_ants,dict_res):
         parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
+        plan_data_name = 'results/'+parsed[1]+'.xls'
+        write_file(dict_visib,dict_res,dict_req,plan_data_name)
+        GanttPlan(plan_data_name)
         fig_name = 'results/'+parsed[1]+'.png'
         GanttForTask(dict_res,fig_name)
         fig_name2 = 'results/'+parsed[1]+'_T.png'
