@@ -1,7 +1,11 @@
+import plotly
 import plotly.express as px
 import plotly.figure_factory as ff
 import pandas as pd
 import random
+
+from pathlib import Path
+import datetime as dt
 
 # the keys is used for the colors / cataglories
 keys_in_task = []
@@ -124,32 +128,34 @@ def GanttForAntenne(dict_res,dict_req,fig_name):
     return 0
 
 
-"""
-df = pd.DataFrame([
-    dict(Task="Job A", Start='2009-01-01', Finish='2009-02-28', Resource="Alex"),
-    dict(Task="Job B", Start='2009-03-05', Finish='2009-04-15', Resource="Alex"),
-    dict(Task="Job C", Start='2009-02-20', Finish='2009-05-30', Resource="Max")
-])
 
-fig = px.timeline(df, x_start="Start", x_end="Finish", y="Resource", color="Resource")
-fig.show()
-"""
+def GanttPlan(input_path):
+    EXCEL_FILE = Path.cwd() / input_path
+    # Read Dataframe from Excel file
+    df = pd.read_excel(EXCEL_FILE)
+    # Assign Columns to variables
+    tasks = df["Task"]
+    start = df["Start"]
+    reference = dt.datetime(2022,1,1,0,0)
+    datetime_series_s = start.astype('timedelta64[s]') + reference
+    time_series_s = pd.to_datetime(datetime_series_s, unit='s')
+    finish = df["Finish"]
+    datetime_series_e = finish.astype('timedelta64[s]') + reference
+    time_series_e = pd.to_datetime(datetime_series_e, unit='s')
+    color = df["Color"]
+    opacity = df ["Opacity"]
+    information = df["Name"]
+    # Create Gantt Chart
+    fig = px.timeline(
+        df, x_start=time_series_s, x_end=time_series_e, y=tasks, color=color, title="Task Overview", opacity = opacity, hover_name = information
+    )
+    # Upade/Change Layout
+    fig.update_yaxes(autorange="reversed")
+    fig.update_layout(title_font_size=42, font_size=18, title_font_family="Arial")
 
-"""
-df = [dict(Task="Job-1", Start='2017-01-01', Finish='2017-02-02', Resource='Complete'),
-      dict(Task="Job-1", Start='2017-02-15', Finish='2017-03-15', Resource='Incomplete'),
-      dict(Task="Job-2", Start='2017-01-17', Finish='2017-02-17', Resource='Not Started'),
-      dict(Task="Job-2", Start='2017-01-17', Finish='2017-02-17', Resource='Complete'),
-      dict(Task="Job-3", Start='2017-03-10', Finish='2017-03-20', Resource='Not Started'),
-      dict(Task="Job-3", Start='2017-04-01', Finish='2017-04-20', Resource='Not Started'),
-      dict(Task="Job-3", Start='2017-05-18', Finish='2017-06-18', Resource='Not Started'),
-      dict(Task="Job-4", Start='2017-01-14', Finish='2017-03-14', Resource='Complete')]
+    # Interactive Gantt
+    # fig = ff.create_gantt(df)
+    # Save Graph and Export to HTML
+    plotly.offline.plot(fig, filename="Task_Overview_Gantt.html")
 
-colors = {'Not Started': 'rgb(220, 0, 0)',
-          'Incomplete': (1, 0.9, 0.16),
-          'Complete': 'rgb(0, 255, 100)'}
 
-fig = ff.create_gantt(df, colors=colors, index_col='Resource', show_colorbar=True,
-                      group_tasks=True)
-fig.show()
-"""

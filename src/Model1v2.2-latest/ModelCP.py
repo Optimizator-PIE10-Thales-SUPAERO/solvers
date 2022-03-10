@@ -17,7 +17,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     n_antennes = len(list_antennes)
     # bounds for time
     # IMPORTANT CONFIGURATION
-    upper_bound = 40000 # 1209600
+    upper_bound = 160000 # 1209600
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
@@ -164,8 +164,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
             sat_id = int(dict_satellites[task_id].strip('SAT'))
             if (sat_id,antenne_id) in dict_non_visib.keys():
                 list_intervals = dict_non_visib[sat_id,antenne_id]
-                # print("@list_intervals",list_intervals)
-                for s,e in list_intervals:
+                for (s,e) in list_intervals:
                     for rep_id in range(dict_max_repetive[task_id]):
                         time = variables_matrix[task_id,antenne_id,rep_id]
                         t1_bool = model.NewBoolVar("t1_"+str(task_id)+str(antenne_id)+str(s)+str(e))
@@ -173,15 +172,15 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
                         # have to create two new values to control that there is only one true
                         # don't forget minus dict_min_lag[task_id]
                         # there is no need to judge if s == e, because it will not influence the results.
-                        model.Add(time.start > e - dict_min_lag[task_id]).OnlyEnforceIf(t1_bool)
-                        model.Add(time.end < s).OnlyEnforceIf(t2_bool)
+                        model.Add(time.start > e ).OnlyEnforceIf(t1_bool)
+                        model.Add(time.end - dict_min_lag[task_id] < s).OnlyEnforceIf(t2_bool)
                         t1_bool_and = model.NewBoolVar("t1_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         t2_bool_and = model.NewBoolVar("t2_and_"+str(task_id)+str(antenne_id)+str(s)+str(e))
                         model.Add(t1_bool_and==1).OnlyEnforceIf(t1_bool)
                         model.Add(t2_bool_and==1).OnlyEnforceIf(t2_bool)
                         tmp_t1_t2 = []
-                        tmp_t1_t2.append(t1_bool_and)
-                        tmp_t1_t2.append(t2_bool_and)
+                        tmp_t1_t2.append(t1_bool)
+                        tmp_t1_t2.append(t2_bool)
  
                         model.Add(sum(tmp_t1_t2) == 1)
             else:
