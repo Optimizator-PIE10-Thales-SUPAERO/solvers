@@ -145,7 +145,7 @@ if __name__ == '__main__':
     # print(dict_req)
     # print("-->results are<--")
     # print(dict_res)
-    if check(dict_req,list_sats,list_ants,dict_res):
+    if check(dict_visib,dict_req,list_sats,list_ants,dict_res):
         parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
         plan_data_name = 'results/'+parsed[1]+'.xls'
         write_file(dict_visib,dict_res,dict_req,plan_data_name)
