@@ -17,7 +17,7 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     n_antennes = len(list_antennes)
     # bounds for time
     # IMPORTANT CONFIGURATION
-    upper_bound = 160000 # 1209600
+    upper_bound = 60000 # 1209600
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
