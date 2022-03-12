@@ -1,20 +1,20 @@
 -->Statistics<--
   status   : OPTIMAL
-  conflicts: 2495
-  branches : 4030
-  wall time: 1.319570498 s
+  conflicts: 2348
+  branches : 3763
+  wall time: 1.2333451260000001 s
 Optimal score : 875.0
 
 TASK0:  
-SAT01_ANT1_OCC0     [28200,56400]  
-SAT01_ANT3_OCC1     [0,28200]      
+SAT01_ANT1_OCC1     [28200,56400]  
+SAT01_ANT2_OCC0     [0,28200]      
+SAT01_ANT3_OCC2     [56400,84600]  
 
 TASK1:  
-SAT02_ANT1_OCC1     [0,28200]      
-SAT02_ANT2_OCC0     [28200,56400]  
+SAT02_ANT1_OCC2     [0,28200]      
+SAT02_ANT3_OCC0     [28200,56400]  
 
 TASK2:  
-SAT03_ANT2_OCC2     [0,28200]      
-SAT03_ANT3_OCC0     [28200,56400]  
-SAT03_ANT3_OCC1     [56400,84600]  
+SAT03_ANT2_OCC0     [28200,56400]  
+SAT03_ANT3_OCC1     [0,28200]      
 

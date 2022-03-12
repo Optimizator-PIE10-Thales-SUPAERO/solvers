@@ -2,7 +2,7 @@ import collections
 import math
 from ortools.sat.python import cp_model
 import parse
-
+import sys
 
 def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,filename,flag_nostore=False):
     """ CP-SAT example to showcase calling the solver."""
@@ -11,13 +11,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     # the task number is stored in one column
     
     # no occurrence or have occurrence
-    hasOccurrence = 1
+    hasOccurrence = 0
 
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
     # IMPORTANT CONFIGURATION
-    upper_bound = 100000 # 1209600
+    upper_bound = 1209600 # 1209600
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
@@ -52,6 +52,15 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     print("@groups by satellites",groups)
 
 
+    """
+    check the parameters before start the model building
+    """
+    dict_latest = dict_data['Latest']
+    dict_earliest = dict_data['Earliest']
+    for key in dict_latest:
+        if dict_earliest[key] > upper_bound:
+            print("The bounds given for this scenario is not huge enough !")
+            sys.exit(0)
 
     # Creates the variables.
     # [START variables]
@@ -368,7 +377,9 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
         
         if not flag_nostore:
             parsed = parse.parse('./PIE_SXS10_data/{}/{}.txt',filename)
-            with open('results/'+parsed[1]+'_'+str(upper_bound)+'.txt', 'w+') as f:
+            output_path = 'results/'+parsed[1]+'_'+str(upper_bound)+'.txt'
+            print("\n@Results are stored in file : ",output_path)
+            with open(output_path, 'w+') as f:
                 f.write('-->Statistics<--\n')
                 f.write(f'  status   : {solver.StatusName(status)}\n')
                 f.write(f'  conflicts: {solver.NumConflicts()}\n')

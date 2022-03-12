@@ -133,9 +133,11 @@ def TestForDiffNombreSat(list_req_file,visib_file='./PIE_SXS10_data/visibilities
     print(" The average time is:",sum(list_time)/len(list_req_file))
 
 
+"""
+define the options of main function
+"""
 parser_arg = argparse.ArgumentParser(description='Modèle Matriciel')
-
-parser_arg.add_argument("-t1", "--TestForDiffNombreSat", help="If you want to test for different number of satellites", action="store_true" )
+parser_arg.add_argument("-g", "--TestForGroupScenario", help="If you want to run the model for a group of scenarios", action="store_true" )
 parser_arg.add_argument('--p', help="Test files path", nargs="?",default='./PIE_SXS10_data/nominal/random_sample/10/')
 parser_arg.add_argument('--r', help="Requirements file", nargs="?",default='./PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt')
 parser_arg.add_argument("--v", help="Visibility file",nargs="?", default="./PIE_SXS10_data/visibilities.txt")
@@ -152,7 +154,7 @@ if __name__ == '__main__':
     list_sats = []
     list_ants = []
     filename = ""
-    if arguments.TestForDiffNombreSat:
+    if arguments.TestForGroupScenario:
         path = arguments.p
         onlyfiles = [arguments.p+f for f in listdir(path) if isfile(join(path, f))]
         TestForDiffNombreSat(onlyfiles,arguments.v)
