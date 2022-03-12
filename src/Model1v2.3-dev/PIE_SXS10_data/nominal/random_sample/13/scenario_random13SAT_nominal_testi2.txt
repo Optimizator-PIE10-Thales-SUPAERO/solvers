@@ -1,0 +1,16 @@
+Satellite list
+SAT32	SAT13	SAT04	SAT01	SAT06	SAT31	SAT45	SAT34	SAT27	SAT03	SAT16	SAT15	SAT46	
+ Task number     Satellite      Priority      Duration      Earliest        Latest    Repetitive    Number occ  Min time lag  Max time lag
+     TASK298         SAT32             8          2037             0       1207563             1            -1         25200         43200
+     TASK182         SAT13             8          2124             0       1207476             1            -1         25200         43200
+     TASK202         SAT04             8          2148             0       1207452             1            -1         25200         43200
+     TASK158         SAT01             8          1855             0       1207745             1            -1         25200         43200
+     TASK190         SAT06             8          1858             0       1207742             1            -1         25200         43200
+     TASK312         SAT31             8          1939             0       1207661             1            -1         25200         43200
+     TASK326         SAT45             8          1943             0       1207657             1            -1         25200         43200
+     TASK270         SAT34             8          2041             0       1207559             1            -1         25200         43200
+     TASK347         SAT27             8          2223             0       1207377             1            -1         25200         43200
+     TASK194         SAT03             8          2053             0       1207547             1            -1         25200         43200
+     TASK206         SAT16             8          2238             0       1207362             1            -1         25200         43200
+     TASK154         SAT15             8          2197             0       1207403             1            -1         25200         43200
+     TASK319         SAT46             8          1890             0       1207710             1            -1         25200         43200
