@@ -1,0 +1,17 @@
+Satellite list
+SAT25	SAT22	SAT15	SAT20	SAT16	SAT03	SAT01	SAT23	SAT13	SAT35	SAT34	SAT45	SAT41	SAT14	
+ Task number     Satellite      Priority      Duration      Earliest        Latest    Repetitive    Number occ  Min time lag  Max time lag
+     TASK277         SAT25             8          2008             0       1207592             1            -1         25200         43200
+     TASK186         SAT22             8          2392             0       1207208             1            -1         25200         43200
+     TASK154         SAT15             8          2197             0       1207403             1            -1         25200         43200
+     TASK166         SAT20             8          2058             0       1207542             1            -1         25200         43200
+     TASK206         SAT16             8          2238             0       1207362             1            -1         25200         43200
+     TASK194         SAT03             8          2053             0       1207547             1            -1         25200         43200
+     TASK158         SAT01             8          1855             0       1207745             1            -1         25200         43200
+     TASK218         SAT23             8          2219             0       1207381             1            -1         25200         43200
+     TASK182         SAT13             8          2124             0       1207476             1            -1         25200         43200
+     TASK305         SAT35             8          1809             0       1207791             1            -1         25200         43200
+     TASK270         SAT34             8          2041             0       1207559             1            -1         25200         43200
+     TASK326         SAT45             8          1943             0       1207657             1            -1         25200         43200
+     TASK256         SAT41             8          1817             0       1207783             1            -1         25200         43200
+     TASK150         SAT14             8          1954             0       1207646             1            -1         25200         43200

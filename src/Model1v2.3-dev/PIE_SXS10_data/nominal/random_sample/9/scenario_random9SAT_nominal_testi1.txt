@@ -1,0 +1,12 @@
+Satellite list
+SAT03	SAT34	SAT06	SAT31	SAT17	SAT07	SAT20	SAT14	SAT16	
+ Task number     Satellite      Priority      Duration      Earliest        Latest    Repetitive    Number occ  Min time lag  Max time lag
+     TASK194         SAT03             8          2053             0       1207547             1            -1         25200         43200
+     TASK270         SAT34             8          2041             0       1207559             1            -1         25200         43200
+     TASK190         SAT06             8          1858             0       1207742             1            -1         25200         43200
+     TASK312         SAT31             8          1939             0       1207661             1            -1         25200         43200
+     TASK230         SAT17             8          2016             0       1207584             1            -1         25200         43200
+     TASK178         SAT07             8          2108             0       1207492             1            -1         25200         43200
+     TASK166         SAT20             8          2058             0       1207542             1            -1         25200         43200
+     TASK150         SAT14             8          1954             0       1207646             1            -1         25200         43200
+     TASK206         SAT16             8          2238             0       1207362             1            -1         25200         43200
