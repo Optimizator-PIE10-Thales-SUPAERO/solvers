@@ -33,13 +33,13 @@ def VisibChecker(dict_visib,dict_res):
             else:
                 list_visibility = dict_visib[sat,ant]
                 flag = False
-                # print(list_visibility)
-                # print(element['start'],element['end'])
                 for s,e in list_visibility:
                     if s <= element['start'] and e >= element['end']:
                         # print(s,e)
                         flag = True
                 if not flag:
+                    print(list_visibility)
+                    print(element['start'],element['end'])
                     return False
     return True
 

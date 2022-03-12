@@ -11,13 +11,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     # the task number is stored in one column
     
     # no occurrence or have occurrence
-    hasOccurrence = 1
+    hasOccurrence = 0
 
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
     # IMPORTANT CONFIGURATION
-    upper_bound = 100000 # 1209600
+    upper_bound = 1209600 # 1209600
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']

@@ -11,13 +11,13 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     # the task number is stored in one column
     
     # no occurrence or have occurrence
-    hasOccurrence = 0
+    hasOccurrence = 1
 
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
     # IMPORTANT CONFIGURATION
-    upper_bound = 1209600 # 1209600
+    upper_bound = 60000 # 1209600
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
@@ -38,11 +38,25 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
 
     dict_max_repetive = {}
 
+    
     for key in dict_duration:
         if dict_occ[key] == -1:
             dict_max_repetive[key] = 1 if hasOccurrence == 0 else math.floor(upper_bound/(dict_duration[key]+dict_min_lag[key]))
         else:
             dict_max_repetive[key] = 1
+    """
+    Comment code below is USEFUL: 
+        A TEST for different repetitions when you fix the upper bound to a big enough value, e.g. 1209600
+    """
+    '''
+    for key in dict_duration:
+        if dict_occ[key] == -1:
+            dict_max_repetive[key] = 1 if hasOccurrence == 0 else 10
+        else:
+            dict_max_repetive[key] = 1
+    '''
+   
+
     print("@dict_max_repetive:\n",dict_max_repetive)
 
     # seperate the tasks by satellites
