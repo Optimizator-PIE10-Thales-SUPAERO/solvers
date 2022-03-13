@@ -40,6 +40,7 @@ def VisibChecker(dict_visib,dict_res):
                 if not flag:
                     print(list_visibility)
                     print(element['start'],element['end'])
+                    print(element)
                     return False
     return True
 

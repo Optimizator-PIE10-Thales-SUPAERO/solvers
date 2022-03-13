@@ -4,20 +4,17 @@ from ortools.sat.python import cp_model
 import parse
 import sys
 
-def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,filename,flag_nostore=False):
+def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_antennes,filename,setOcc=-1,flag_nostore=False,flag_nooccurrence=False):
     """ CP-SAT example to showcase calling the solver."""
 
     # Remember that the task id of dict_data is the index but not the task number
     # the task number is stored in one column
-    
-    # no occurrence or have occurrence
-    hasOccurrence = 1
 
     # number of variables : tasks * antennes
     n_antennes = len(list_antennes)
     # bounds for time
     # IMPORTANT CONFIGURATION
-    upper_bound = 60000 # 1209600
+    upper_bound = 1209600 # 1209600
     lower_bound = 0
     # duration
     dict_duration = dict_data['Duration']
@@ -41,21 +38,19 @@ def SimpleSatProgram(model,dict_data,dict_non_visib,n_tasks,list_sats,list_anten
     
     for key in dict_duration:
         if dict_occ[key] == -1:
-            dict_max_repetive[key] = 1 if hasOccurrence == 0 else math.floor(upper_bound/(dict_duration[key]+dict_min_lag[key]))
+            dict_max_repetive[key] = 1 if flag_nooccurrence else math.floor(upper_bound/(dict_duration[key]+dict_min_lag[key]))
         else:
             dict_max_repetive[key] = 1
     """
     Comment code below is USEFUL: 
         A TEST for different repetitions when you fix the upper bound to a big enough value, e.g. 1209600
     """
-    '''
-    for key in dict_duration:
-        if dict_occ[key] == -1:
-            dict_max_repetive[key] = 1 if hasOccurrence == 0 else 10
-        else:
-            dict_max_repetive[key] = 1
-    '''
-   
+    if setOcc >= 0:
+        for key in dict_duration:
+            if dict_occ[key] == -1:
+                dict_max_repetive[key] = 1 if flag_nooccurrence else setOcc
+            else:
+                dict_max_repetive[key] = 1
 
     print("@dict_max_repetive:\n",dict_max_repetive)
 

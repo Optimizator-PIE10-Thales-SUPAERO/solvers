@@ -43,16 +43,16 @@ colors = {
     'ANT1': 'rgb(220, 0, 0)',
     'ANT2': 'rgb(255, 79, 0)',
     'ANT3': 'rgb(203, 79, 168)',
-    'ANT4': 'rgb(235, 207, 168)',
+    'ANT4': 'rgb(35, 207, 168)',
     'ANT5': 'rgb(25, 207, 168)',
     'ANT6': 'rgb(171, 207, 168)',
     'ANT7': 'rgb(122, 207, 168)',
-    'ANT8': 'rgb(122, 136, 168)',
+    'ANT8': 'rgb(22, 36, 168)',
     'ANT9': 'rgb(122, 136, 237)',
     'ANT10': 'rgb(193, 79, 252)',
     'ANT11': 'rgb(234, 79, 160)',
-    'ANT12': 'rgb(189, 208, 192)',
-    'ANT13': 'rgb(222, 208, 192)',
+    'ANT12': 'rgb(189, 20, 19)',
+    'ANT13': 'rgb(222, 28, 92)',
     'ANT14': 'rgb(220, 123, 2)',
     'ANT15': 'rgb(220, 40, 224)',
     'ANT16': 'rgb(20, 12, 190)'
@@ -84,6 +84,7 @@ def GanttForTask(dict_res,fig_name):
 
     fig = ff.create_gantt(df,index_col='Resource', colors = part_colors, show_colorbar=True,group_tasks=True)
     fig.update_layout(xaxis_type='linear')
+    # fig.update_layout(title_font_size=42, font_size=18, title_font_family="Arial")
     fig.show()
     fig.write_image(fig_name)
 
@@ -122,6 +123,8 @@ def GanttForAntenne(dict_res,dict_req,fig_name):
 
     fig = ff.create_gantt(df,index_col='Resource', colors = part_colors, show_colorbar=True,group_tasks=True)
     fig.update_layout(xaxis_type='linear')
+    # fig.update_layout(title_font_size=42, font_size=18, title_font_family="Arial")
+    
     fig.show()
     fig.write_image(fig_name)
 
