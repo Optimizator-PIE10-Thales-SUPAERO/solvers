@@ -166,8 +166,8 @@ def Solver_PIE(data_input_path, data_output_path):
         priority = int(tache["Priority"])
         min_time_lag = int(tache["Min time lag"])
         max_time_lag = int(tache["Max time lag"])
-        repetition = int((temp_end_limit - temp_depart_limit)/(duration+min_time_lag))
-        # repetition = 10 # set the maximux repetition 
+        # repetition = int((temp_end_limit - temp_depart_limit)/(duration+min_time_lag))
+        repetition = 20 # set the maximux repetition 
 
         if (N == 1):
             ts_max_list = []
@@ -354,30 +354,70 @@ def Solver_PIE(data_input_path, data_output_path):
                 model.AddMaxEquality(obj_var_chaque_tache, ts_list)
                 obj_var_tache_list.append(obj_var_chaque_tache)     
 
-    # Add the "limitation that the same antenne cannot transmit two tache at the same time" constraint 
+    # Add the "limitation that the same antenne cannot do two tasks at the same time" constraint 
+    # ts_ant_list = []
+    # duration_ant_list = []
+    # sat_list_temp = []
+    # for key in ts_dict_2d_par_antenne:
+    #     ts_list_TEMP = ts_dict_2d_par_antenne[key]
+    #     duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
+    #     satlite = key.split(":")[0]
+    #     if (satlite not in sat_list_temp):
+    #         sat_list_temp.append(satlite)
+    #         ts_list = []
+    #         duration_list = []
+    #         ts_ant_list.append(ts_list)
+    #         duration_ant_list.append(duration_list)
+    #     sat_index = sat_list_temp.index(satlite)
+    #     for ts_temp in ts_list_TEMP:
+    #         ts_ant_list[sat_index].append(ts_temp)
+    #     for duration_temp in duration_list_TEMP:
+    #         duration_ant_list[sat_index].append(duration_temp)
+    
+    # for sat in sat_list_temp:
+    #     sat_index = sat_list_temp.index(sat)
+    #     ts_list = ts_ant_list[sat_index]
+    #     duration_list = duration_ant_list[sat_index]
+
+    #     if (len(ts_list)==0):
+    #         continue
+    #     for i in range(len(ts_list)):
+    #         ts_bool_equal_1 = model.NewBoolVar("ts_bool_equal_1: %s"% str(ts_list[i]))
+    #         model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
+    #         for j in range(i+1,len(ts_list)):
+    #             temp_bool_union = []
+    #             bool_smaller = model.NewBoolVar("smaller")
+    #             bool_bigger = model.NewBoolVar("bigger")
+    #             model.Add((ts_list[i]+duration_list[i])<=ts_list[j]).OnlyEnforceIf(bool_smaller)
+    #             model.Add(ts_list[i]>=ts_list[j] +duration_list[j]).OnlyEnforceIf(bool_bigger)
+    #             temp_bool_union.append(bool_smaller)
+    #             temp_bool_union.append(bool_bigger)
+    #             temp_bool_union.append(ts_bool_equal_1)
+    #             model.Add(sum(temp_bool_union)==1)
+
     ts_ant_list = []
     duration_ant_list = []
-    sat_list_temp = []
+    ant_list_temp = []
     for key in ts_dict_2d_par_antenne:
         ts_list_TEMP = ts_dict_2d_par_antenne[key]
         duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
-        satlite = key.split(":")[0]
-        if (satlite not in sat_list_temp):
-            sat_list_temp.append(satlite)
+        ant = key.split(":")[1]
+        if (ant not in ant_list_temp):
+            ant_list_temp.append(ant)
             ts_list = []
             duration_list = []
             ts_ant_list.append(ts_list)
             duration_ant_list.append(duration_list)
-        sat_index = sat_list_temp.index(satlite)
+        ant_index = ant_list_temp.index(ant)
         for ts_temp in ts_list_TEMP:
-            ts_ant_list[sat_index].append(ts_temp)
+            ts_ant_list[ant_index].append(ts_temp)
         for duration_temp in duration_list_TEMP:
-            duration_ant_list[sat_index].append(duration_temp)
+            duration_ant_list[ant_index].append(duration_temp)
     
-    for sat in sat_list_temp:
-        sat_index = sat_list_temp.index(sat)
-        ts_list = ts_ant_list[sat_index]
-        duration_list = duration_ant_list[sat_index]
+    for ant in ant_list_temp:
+        ant_index = ant_list_temp.index(ant)
+        ts_list = ts_ant_list[ant_index]
+        duration_list = duration_ant_list[ant_index]
 
         if (len(ts_list)==0):
             continue
@@ -394,7 +434,7 @@ def Solver_PIE(data_input_path, data_output_path):
                 temp_bool_union.append(bool_bigger)
                 temp_bool_union.append(ts_bool_equal_1)
                 model.Add(sum(temp_bool_union)==1)
-
+    
     model.Maximize(sum([int(1 / priority_list_par_tache[i]*1000) for i in range(len(obj_var_tache_list))]))
 
    # Creates a solver and solves the model.
