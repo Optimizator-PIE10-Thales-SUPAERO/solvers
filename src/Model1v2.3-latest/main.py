@@ -12,8 +12,8 @@ import parse
 from os import listdir
 from os.path import isfile, join
 
-def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
-                visib_file = './PIE_SXS10_data/visibilities_test.txt',flag_nostore=False):
+def ModelSimple(setOccurrence,req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt',
+                visib_file = './PIE_SXS10_data/visibilities_test.txt',flag_nostore=False,flag_nooccurrence=False):
     parser_req = pfr(req_file)
     parser_visib = pfv(visib_file)
 
@@ -114,20 +114,19 @@ def ModelSimple(req_file = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_exam
 
     print("-->FINISHED<--\n")
 
-    # TODO : reduce the list sat and list antennes, because we don't need all of them
-    results,time = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes,req_file,flag_nostore)
+    results,time = SimpleSatProgram(model,dict_data_df,dict_non_visib,n_tasks,list_sats,list_antennes,req_file,setOccurrence,flag_nostore,flag_nooccurrence)
     print("==>END MODEL<==\n")
     return dict_visib, dict_data_df,list_sats,list_antennes,results,time
 
-def ModelNominalV1(req_file,visib_file='./PIE_SXS10_data/visibilities.txt'):
+def ModelNominalV1(req_file,setOccurrence,flag_nooccurrence,visib_file='./PIE_SXS10_data/visibilities.txt'):
     print("req file",req_file)
-    return ModelSimple(req_file,visib_file)
+    return ModelSimple(setOccurrence,req_file,visib_file,flag_nooccurrence=flag_nooccurrence)
 
-def TestForDiffNombreSat(list_req_file,visib_file='./PIE_SXS10_data/visibilities.txt'):
+def TestForDiffNombreSat(list_req_file,flag_nooccurrence,setOccurrence,visib_file='./PIE_SXS10_data/visibilities.txt'):
     list_time = []
     for req_file in list_req_file:
         print("req file",req_file)
-        dict_visib,dict_req,list_sats,list_ants,dict_res,time = ModelSimple(req_file,visib_file,flag_nostore=True)
+        dict_visib,dict_req,list_sats,list_ants,dict_res,time = ModelSimple(setOccurrence,req_file,visib_file,flag_nostore=True,flag_nooccurrence=flag_nooccurrence)
         list_time.append(time)
     print("@ list of execution time :",list_time)
     print(" The average time is:",sum(list_time)/len(list_req_file))
@@ -138,6 +137,8 @@ define the options of main function
 """
 parser_arg = argparse.ArgumentParser(description='Modèle Matriciel')
 parser_arg.add_argument("-g", "--TestForGroupScenario", help="If you want to run the model for a group of scenarios", action="store_true" )
+parser_arg.add_argument("-no", "--NoOccurrence", help="If you want to run the model without considering the repetition", action="store_true" )
+parser_arg.add_argument("-n",'--SetOccurrence',nargs='?',help="(optional) Set the max time of repetion manully",type=int, default=-1)
 parser_arg.add_argument('--p', help="Test files path", nargs="?",default='./PIE_SXS10_data/nominal/random_sample/10/')
 parser_arg.add_argument('--r', help="Requirements file", nargs="?",default='./PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt')
 parser_arg.add_argument("--v", help="Visibility file",nargs="?", default="./PIE_SXS10_data/visibilities.txt")
@@ -154,18 +155,20 @@ if __name__ == '__main__':
     list_sats = []
     list_ants = []
     filename = ""
+    flag_nooccurrence = True if arguments.NoOccurrence else False
+
     if arguments.TestForGroupScenario:
         path = arguments.p
         onlyfiles = [arguments.p+f for f in listdir(path) if isfile(join(path, f))]
-        TestForDiffNombreSat(onlyfiles,arguments.v)
+        TestForDiffNombreSat(onlyfiles,flag_nooccurrence,arguments.SetOccurrence, arguments.v)
         sys.exit(0)
     else:
         if arguments.r == './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt':
-            dict_visib,dict_req,list_sats,list_ants,dict_res,time = ModelSimple()
+            dict_visib,dict_req,list_sats,list_ants,dict_res,time = ModelSimple(arguments.SetOccurrence,flag_nooccurrence=flag_nooccurrence)
             filename = './PIE_SXS10_data/nominal/scenario_10SAT_nominal_example.txt'
         else:
             filename = arguments.r
-            dict_visib,dict_req,list_sats,list_ants,dict_res,time = ModelNominalV1(filename,arguments.v)
+            dict_visib,dict_req,list_sats,list_ants,dict_res,time = ModelNominalV1(filename,arguments.SetOccurrence,flag_nooccurrence,arguments.v)
     print("==>START CHECKING<==")
     # print(dict_req)
     # print("-->results are<--")
