@@ -243,27 +243,28 @@ def Solver_PIE(data_input_path, data_output_path):
     # Add the "limitation that the same antenne cannot transmit two tache at the same time" constraint 
     ts_ant_list = []
     duration_ant_list = []
-    sat_list_temp = []
+    ant_list_temp = []
     for key in ts_dict_2d_par_antenne:
         ts_list_TEMP = ts_dict_2d_par_antenne[key]
         duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
-        satlite = key.split(":")[0]
-        if (satlite not in sat_list_temp):
-            sat_list_temp.append(satlite)
+        ant = key.split(":")[1]
+        if (ant not in ant_list_temp):
+            ant_list_temp.append(ant)
             ts_list = []
             duration_list = []
             ts_ant_list.append(ts_list)
             duration_ant_list.append(duration_list)
-        sat_index = sat_list_temp.index(satlite)
+        ant_index = ant_list_temp.index(ant)
         for ts_temp in ts_list_TEMP:
-            ts_ant_list[sat_index].append(ts_temp)
+            ts_ant_list[ant_index].append(ts_temp)
         for duration_temp in duration_list_TEMP:
-            duration_ant_list[sat_index].append(duration_temp)
+            duration_ant_list[ant_index].append(duration_temp)
     
-    for sat in sat_list_temp:
-        sat_index = sat_list_temp.index(sat)
-        ts_list = ts_ant_list[sat_index]
-        duration_list = duration_ant_list[sat_index]
+    for ant in ant_list_temp:
+        ant_index = ant_list_temp.index(ant)
+        ts_list = ts_ant_list[ant_index]
+        duration_list = duration_ant_list[ant_index]
+
         if (len(ts_list)==0):
             continue
         for i in range(len(ts_list)):
@@ -311,7 +312,7 @@ def Solver_PIE(data_input_path, data_output_path):
     gantt_diagram(data_output_path)
 def main():
     """Minimal CP-SAT example to showcase calling the solver."""
-    Solver_PIE(["./PIE_SXS10_data/nominal/scenario_10SAT_nominal1.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
+    Solver_PIE(["./PIE_SXS10_data/nominal/test_data.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
 
 if __name__ == '__main__':
     main()
