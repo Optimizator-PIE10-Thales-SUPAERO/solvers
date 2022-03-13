@@ -167,8 +167,7 @@ def Solver_PIE(data_input_path, data_output_path):
         min_time_lag = int(tache["Min time lag"])
         max_time_lag = int(tache["Max time lag"])
         # repetition = int((temp_end_limit - temp_depart_limit)/(duration+min_time_lag))
-        repetition = 20 # set the maximux repetition 
-
+        repetition = 1 # set the maximux repetition 
         if (N == 1):
             ts_max_list = []
             ts_list_repetition_total = []
@@ -218,6 +217,7 @@ def Solver_PIE(data_input_path, data_output_path):
                 model.Add(sum(ts_bool_negative_list_repetition)>=(nb_antenne-1))
                 model.Add(sum(ts_bool_repetition_union_list) +sum(ts_bool_negative_list_repetition) ==nb_antenne)
                 ts_list_2d_par_tache.append(ts_list_repetition)
+                priority_list_par_tache.append(priority)
                 ts_ant_max = model.NewIntVar(-1, time_limit_right_all, 'obj_max')
                 model.AddMaxEquality(ts_ant_max ,ts_list_repetition)
                 ts_max_list.append(ts_ant_max)
@@ -344,15 +344,15 @@ def Solver_PIE(data_input_path, data_output_path):
             model.Add(sum(ts_bool_negative_list)==(nb_antenne-1)) # Count non negative value and make sure this could be 1
             ts_list_2d_par_tache.append(ts_list)
             priority_list_par_tache.append(priority)
-            if N==1:
-                for i in len(ts_list_repetition_total):
-                    obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
-                    model.AddMaxEquality(obj_var_chaque_tache, ts_list_repetition_total[i])
-                    obj_var_tache_list.append(obj_var_chaque_tache)
-            else:
+        if N==1:
+            for i in range(len(ts_list_repetition_total)):
                 obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
-                model.AddMaxEquality(obj_var_chaque_tache, ts_list)
-                obj_var_tache_list.append(obj_var_chaque_tache)     
+                model.AddMaxEquality(obj_var_chaque_tache, ts_list_repetition_total[i])
+                obj_var_tache_list.append(obj_var_chaque_tache)
+        else:
+            obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
+            model.AddMaxEquality(obj_var_chaque_tache, ts_list)
+            obj_var_tache_list.append(obj_var_chaque_tache)     
 
     # Add the "limitation that the same antenne cannot do two tasks at the same time" constraint 
     # ts_ant_list = []
@@ -450,6 +450,10 @@ def Solver_PIE(data_input_path, data_output_path):
     print(f'  conflicts: {solver.NumConflicts()}')
     print(f'  branches : {solver.NumBranches()}')
     print(f'  wall time: {solver.WallTime()} s')
+
+    for var in obj_var_tache_list:
+         solution = ' {}'.format(solver.Value(var))
+         print (solution)
     # Export data from list to excel
     write_file(solver, data_visib_df, ts_dict_2d_par_antenne, duration_ts_dict_2d_par_antenne, data_output_path)
 
@@ -457,7 +461,7 @@ def Solver_PIE(data_input_path, data_output_path):
     gantt_diagram(data_output_path)
 def main():
     """Minimal CP-SAT example to showcase calling the solver."""
-    Solver_PIE(["./PIE_SXS10_data/nominal/test_data.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
+    Solver_PIE(["./PIE_SXS10_data/nominal/scenario_10SAT_nominal_with_oneoff1.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
 
 if __name__ == '__main__':
     main()
