@@ -2,7 +2,6 @@
 from abc import abstractproperty
 from datetime import time
 from os import X_OK
-from tkinter import S
 from ortools.sat.python import cp_model
 import pandas as pd
 import matplotlib.pyplot as pltW
@@ -46,7 +45,7 @@ def write_file(solver, visibility, ts_dict_2d_par_antenne, duration_ts_dict_2d_p
                         sheet1.write(i, 2, int(vis['End']))
                         sheet1.write(i, 3, str(index) + " "+ satlite + " " + antname)
                         sheet1.write(i, 4, antname_index*5)
-                        sheet1.write(i, 5, 0.05)
+                        sheet1.write(i, 5, 0.2)
                         sheet1.write(i, 6, "Start Time="+str(vis['Start'])+ "; End Time: " + str(vis['End']))
                         i = i+1
             if (len(ts_dict_2d_par_antenne[key]) != 0):
@@ -127,13 +126,13 @@ def Solver_PIE(data_input_path, data_output_path):
     [data_df, data_visib_df] = extraire(data_input_path[0],data_input_path[1])
 
     # Creates the variables.
-    data_visib_df_copy = data_visib_df.copy()
-    data_visib_df_copy.loc[:,'End']= data_visib_df['End'].astype(int)
-    data_visib_df_copy.loc[:,'Start'] = data_visib_df['Start'].astype(int)
-    time_limit_right_all = int(data_visib_df_copy['End'].max());
+    x = data_visib_df.copy()
+    x.loc[:,'End']= data_visib_df['End'].astype(int)
+    time_limit_right_all = int(x['End'].max());
 
     # different kinds of list to save the ts (Find corresponding ts more efficiently)
     ts_list_2d_par_tache = []
+    priority_list_par_tache = []
     ts_dict_2d_par_antenne = {}
     duration_ts_dict_2d_par_antenne = {}   # Need to save duartion because we need this information to add corresponding constarints
     ts_list = []
@@ -159,139 +158,61 @@ def Solver_PIE(data_input_path, data_output_path):
         nb_antenne = len(antennes)
         ts_bool_and_list = []
         ts_bool_negative_list = []
-        temp_depart_limit = int(tache["Earliest"])
-        temp_end_limit = int(tache["Latest"])
-        duration = int(tache["Duration"])
-        N = int(tache["Repetitive"])
-        priority = int(tache["Priority"])
-        min_time_lag = int(tache["Min time lag"])
-        max_time_lag = int(tache["Max time lag"])
-        repetition = int((temp_end_limit - temp_depart_limit)/(duration+min_time_lag))
-        repetition = 2
 
-        if (N == 1):
-            ts_max_list = []
-            for i in range(repetition):
-                ts_list_repetition = []
-                ts_bool_negative_list_repetition = []
-                ts_bool_repetition_union_list = []
-                for ant in antennes:
-                    # Choose antenna to put ts
-                    antenne_name = str(tache["Satellite"])+':'+ str(ant)
-                    ts = model.NewIntVar(-1, temp_end_limit-duration, "Repetition task: %s ,ant: %s, Start time-> Tache : %s, Sat: %s, Ant: %s" % (str(i),str(ant), tache["Task number"],tache["Satellite"],  ant))
-                    ts_bool_negative = model.NewBoolVar("t_bool_negative: Tache repetition: %s, Ant: %s" % (tache["Task number"], ant))
-                    ts_bool_negative_list_repetition.append(ts_bool_negative)
-                    # append every list the corresponding values
-                    ts_dict_2d_par_antenne[antenne_name].append(ts)
-                    duration_ts_dict_2d_par_antenne[antenne_name].append(duration)
-                    ts_list_repetition.append(ts)
-                    model.Add(ts==-1).OnlyEnforceIf(ts_bool_negative)  
-                    # Add start time constarint for the repetition constraint
-                    # Add the earliest start time of a task: if the ts == -1, we neglige the start time constarint
-                    list_union = []
-                    bool_after = model.NewBoolVar("bool_after-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant)) 
-                    model.Add(ts >= temp_depart_limit).OnlyEnforceIf(bool_after)           
-                    list_union.append(bool_after)
-                    list_union.append(ts_bool_negative)
-                    model.Add(sum(list_union)==1)
+        for ant in antennes:
+            antenne_name = str(tache["Satellite"])+':'+ str(ant)
+            visibilities = data_visib_df[(data_visib_df["Sat"]==str(tache["Satellite"])) & (data_visib_df["Ant"]==str(ant))]
+            temp_depart_limit = int(tache["Earliest"])
+            temp_end_limit = int(tache["Latest"])
+            duration = int(tache["Duration"])
+            priority = int(tache["Priority"])
 
-                    visibilities = data_visib_df[(data_visib_df["Sat"]==str(tache["Satellite"])) & (data_visib_df["Ant"]==str(ant))]
-                    # Add visibility constarints for the created ts
-                    temp_union = []
-                    for index_vis,vis in visibilities.iterrows():
-                        ts_bool_ge  = model.NewBoolVar("t_bool_ge: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                        ts_bool_le  = model.NewBoolVar("t_bool_le: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                        ts_bool_and = model.NewBoolVar("t_bool_and: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                        tmp_ts = []
-                        tmp_ts.append(ts_bool_ge)
-                        tmp_ts.append(ts_bool_le)
-                        model.Add(ts <= (int(vis['End'])-duration)).OnlyEnforceIf(ts_bool_le)  
-                        model.Add(ts >= int(vis['Start'])).OnlyEnforceIf(ts_bool_ge)
-                        model.Add(sum(tmp_ts)==2).OnlyEnforceIf(ts_bool_and)
-                        temp_union.append(ts_bool_and)
-                        ts_bool_repetition_union_list.append(ts_bool_and)
-                    model.Add(sum(temp_union)<=1) # Means in all visibility interval, the task created could only be executed less one time. 
-                model.Add(sum(ts_bool_repetition_union_list)==1)
-                model.Add(sum(ts_bool_negative_list_repetition)==(nb_antenne-1))
-                ts_list_2d_par_tache.append(ts_list_repetition)
-                ts_ant_max = model.NewIntVar(-1, time_limit_right_all, 'obj_max')
-                model.AddMaxEquality(ts_ant_max ,ts_list_repetition)
-                ts_max_list.append(ts_ant_max)
-            # min time lag 
-            # 还是infaisable ,需要后面再看看为什么，这里还是限制有点多。
-            for i in range(len(ts_max_list)):
-                union_list = []
-                union_union_list = []
-                bool_negative_i = model.NewBoolVar("t_bool_i: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                bool_min_time_lag =  model.NewBoolVar("bool_min_time_lag: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                model.Add(ts_max_list[i]==-1).OnlyEnforceIf(bool_negative_i)
-                for j in range(i+1,len(ts_max_list)):
-                    bool_or = model.NewBoolVar("t_bool_or: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                    bool_negative_j = model.NewBoolVar("t_bool_j: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                    model.Add(ts_max_list[j]==-1).OnlyEnforceIf(bool_negative_j)
-                    union_list.append(bool_negative_i)
-                    union_list.append(bool_negative_j)
-                    model.Add(sum(union_list)==1).OnlyEnforceIf(bool_or)
-                    union_union_list.append(bool_or)
-                    ts_abs_diff1 = model.NewIntVar(-1, time_limit_right_all, 'obj_max')
-                    ts_abs_diff2 = model.NewIntVar(-1, time_limit_right_all, 'obj_max')
-                    ts_abs = model.NewIntVar(-1, time_limit_right_all, 'obj_max')
-                    model.Add(ts_abs_diff1==ts_max_list[i]-ts_max_list[j])
-                    model.Add(ts_abs_diff2==ts_max_list[j]-ts_max_list[i])
-                    model.AddMaxEquality(ts_abs,[ts_abs_diff1,ts_abs_diff2])
-                    model.Add(ts_abs>=min_time_lag).OnlyEnforceIf(bool_min_time_lag)
-                    union_union_list.append(bool_min_time_lag)
-                    model.Add(sum(union_union_list)==1)
-        else:
-            for ant in antennes:
-                antenne_name = str(tache["Satellite"])+':'+ str(ant)
-                visibilities = data_visib_df[(data_visib_df["Sat"]==str(tache["Satellite"])) & (data_visib_df["Ant"]==str(ant))]
-                # Define variables for every task and add "latest time" constraint
-                ts = model.NewIntVar(-1,temp_end_limit-duration, "Start time-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant))
-                ts_bool_negative = model.NewBoolVar("t_bool_negative: Tache: %s, Ant: %s" % (tache["Task number"],ant))
+            # Define variables for every task and add "latest time" constraint
+            ts = model.NewIntVar(-1,temp_end_limit-duration, "Start time-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant))
+            ts_bool_negative = model.NewBoolVar("t_bool_negative: Tache: %s, Ant: %s" % (tache["Task number"],ant))
 
-                # append every list the corresponding values
-                ts_dict_2d_par_antenne[antenne_name].append(ts)
-                duration_ts_dict_2d_par_antenne[antenne_name].append(duration)
-                ts_list.append(ts)
-                model.Add(ts==-1).OnlyEnforceIf(ts_bool_negative)   
-                ts_bool_negative_list.append(ts_bool_negative)
-                # Add start time constarint for this ts
-                # Add the earliest start time of a task: if the ts == -1, we neglige the start time constarint
-                list_union = []
-                bool_sup = model.NewBoolVar("bool_sup-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant)) 
-                model.Add(ts>=temp_depart_limit).OnlyEnforceIf(bool_sup)
-                ts_bool_not_equal_1 = model.NewBoolVar("ts_bool_not_equal_1-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant)) 
-                model.Add(ts==-1).OnlyEnforceIf(ts_bool_not_equal_1)
-                list_union.append(bool_sup)
-                list_union.append(ts_bool_not_equal_1)
-                model.Add(sum(list_union)==1)
+            # append every list the corresponding values
+            ts_dict_2d_par_antenne[antenne_name].append(ts)
+            duration_ts_dict_2d_par_antenne[antenne_name].append(duration)
+            ts_list.append(ts)
+            model.Add(ts==-1).OnlyEnforceIf(ts_bool_negative)   
+            ts_bool_negative_list.append(ts_bool_negative)
 
-            # Add visibility constarints for the created ts
-                temp_union = []
-                for index_vis,vis in visibilities.iterrows():
-                    ts_bool_ge = model.NewBoolVar("t_bool_ge: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                    ts_bool_le = model.NewBoolVar("t_bool_le: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                    ts_bool_and = model.NewBoolVar("t_bool_and: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                    tmp_ts = []
-                    tmp_ts.append(ts_bool_ge)
-                    tmp_ts.append(ts_bool_le)
-                    model.Add(ts<=(int(vis['End'])-duration)).OnlyEnforceIf(ts_bool_le)  
-                    model.Add(ts>=int(vis['Start'])).OnlyEnforceIf(ts_bool_ge)
-                    model.Add(sum(tmp_ts)==2).OnlyEnforceIf(ts_bool_and)
-                    temp_union.append(ts_bool_and)
-                    ts_bool_and_list.append(ts_bool_and)
-                model.Add(sum(temp_union)<=1) # Means in all visibility interval, the task created could only be executed less one time. 
+            # Add start time constarint for this ts
+            # Add the earliest start time of a task: if the ts == -1, we neglige the start time constarint
+            list_union = []
+            bool_sup = model.NewBoolVar("bool_sup-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant)) 
+            model.Add(ts>=temp_depart_limit).OnlyEnforceIf(bool_sup)
+            ts_bool_not_equal_1 = model.NewBoolVar("ts_bool_not_equal_1-> Tache : %s, Sat: %s, Ant: %s" % (tache["Task number"],tache["Satellite"], ant)) 
+            model.Add(ts==-1).OnlyEnforceIf(ts_bool_not_equal_1)
+            list_union.append(bool_sup)
+            list_union.append(ts_bool_not_equal_1)
+            model.Add(sum(list_union)==1)
+
+        # Add visibility constarints for the created ts
+            temp_union = []
+            for index_vis,vis in visibilities.iterrows():
+                ts_bool_ge = model.NewBoolVar("t_bool_ge: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
+                ts_bool_le = model.NewBoolVar("t_bool_le: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
+                ts_bool_and = model.NewBoolVar("t_bool_and: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
+                tmp_ts = []
+                tmp_ts.append(ts_bool_ge)
+                tmp_ts.append(ts_bool_le)
+                model.Add(ts<=(int(vis['End'])-duration)).OnlyEnforceIf(ts_bool_le)  
+                model.Add(ts>=int(vis['Start'])).OnlyEnforceIf(ts_bool_ge)
+                model.Add(sum(tmp_ts)==2).OnlyEnforceIf(ts_bool_and)
+                temp_union.append(ts_bool_and)
+                ts_bool_and_list.append(ts_bool_and)
+            model.Add(sum(temp_union)<=1) # Means in all visibility interval, the task created could only be executed less one time. 
 
         #  Add the "The corresponding task could only excecuted by only 1 time" constarint
-        if N!=1:
-            model.Add(sum(ts_bool_and_list)==1) # Means in all visibility interval, the task created could only be executed only one time in all antenna. 
-            model.Add(sum(ts_bool_negative_list)==(nb_antenne-1)) # Count non negative value and make sure this could be 1
-            ts_list_2d_par_tache.append(ts_list)
-        # print (ts_list_2d_par_tache[0][0])
-        # obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
-        # model.AddMaxEquality(obj_var_chaque_tache, ts_list)
-        # obj_var_tache_list.append(obj_var_chaque_tache)
+        model.Add(sum(ts_bool_and_list)==1) # Means in all visibility interval, the task created could only be executed only one time in all antenna. 
+        model.Add(sum(ts_bool_negative_list)==(nb_antenne-1)) # Count non negative value and make sure this could be 1
+        ts_list_2d_par_tache.append(ts_list)
+        priority_list_par_tache.append(priority)
+        obj_var_chaque_tache = model.NewIntVar(0, time_limit_right_all, 'obj_max')
+        model.AddMaxEquality(obj_var_chaque_tache, ts_list)
+        obj_var_tache_list.append(obj_var_chaque_tache)
 
         # Add priority task transfer order limit
         # if version == "complex":
@@ -318,8 +239,7 @@ def Solver_PIE(data_input_path, data_output_path):
         #     model.Add(sum(ts_bool_and_list)==N)
         #     model.Add(sum(ts_bool_negative_list)==(nb_antenne-N)) # <= means two ts repetitive could be arranged to 1 visibility interval, but the maximum sum(temp_union) is equal to transfertimes
            
-
-    # Add the "limitation that the same antenne cannot transmit two tache at the same time" constraint 
+    # Add the "limitation that the same satellite cannot do two tasks at the same time" constraint 
     ts_ant_list = []
     duration_ant_list = []
     sat_list_temp = []
@@ -360,10 +280,51 @@ def Solver_PIE(data_input_path, data_output_path):
                 temp_bool_union.append(ts_bool_equal_1)
                 model.Add(sum(temp_bool_union)==1)
 
+    # Add the "limitation that the same antenne cannot transmit two tache at the same time" constraint 
+    ts_ant_list = []
+    duration_ant_list = []
+    ant_list_temp = []
+    for key in ts_dict_2d_par_antenne:
+        ts_list_TEMP = ts_dict_2d_par_antenne[key]
+        duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
+        ant = key.split(":")[1]
+        if (ant not in ant_list_temp):
+            ant_list_temp.append(ant)
+            ts_list = []
+            duration_list = []
+            ts_ant_list.append(ts_list)
+            duration_ant_list.append(duration_list)
+        ant_index = ant_list_temp.index(ant)
+        for ts_temp in ts_list_TEMP:
+            ts_ant_list[ant_index].append(ts_temp)
+        for duration_temp in duration_list_TEMP:
+            duration_ant_list[ant_index].append(duration_temp)
+    
+    for ant in ant_list_temp:
+        ant_index = ant_list_temp.index(ant)
+        ts_list = ts_ant_list[ant_index]
+        duration_list = duration_ant_list[ant_index]
+
+        if (len(ts_list)==0):
+            continue
+        for i in range(len(ts_list)):
+            ts_bool_equal_1 = model.NewBoolVar("ts_bool_equal_1: %s"% str(ts_list[i]))
+            model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
+            for j in range(i+1,len(ts_list)):
+                temp_bool_union = []
+                bool_smaller = model.NewBoolVar("smaller")
+                bool_bigger = model.NewBoolVar("bigger")
+                model.Add((ts_list[i]+duration_list[i])<=ts_list[j]).OnlyEnforceIf(bool_smaller)
+                model.Add(ts_list[i]>=ts_list[j] +duration_list[j]).OnlyEnforceIf(bool_bigger)
+                temp_bool_union.append(bool_smaller)
+                temp_bool_union.append(bool_bigger)
+                temp_bool_union.append(ts_bool_equal_1)
+                model.Add(sum(temp_bool_union)==1)
+
     # Define the objectif variables to find the best solution Min(Max(ts))
     # obj_var = model.NewIntVar(0, time_limit_right_all, 'valeur maximum des variables de decision')
     # model.AddMaxEquality(obj_var, obj_var_tache_list)
-    # model.Minimize(sum(obj_var_tache_list))
+    model.Maximize(sum([int(1 / priority_list_par_tache[i]*1000) for i in range(len(obj_var_tache_list))]))
 
    # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
@@ -380,6 +341,7 @@ def Solver_PIE(data_input_path, data_output_path):
         # Statistics.
     print('\nStatistics')
     print(f'  status   : {solver.StatusName(status)}')
+    print(f'  score   : {solver.ObjectiveValue()}')
     print(f'  conflicts: {solver.NumConflicts()}')
     print(f'  branches : {solver.NumBranches()}')
     print(f'  wall time: {solver.WallTime()} s')
@@ -390,7 +352,7 @@ def Solver_PIE(data_input_path, data_output_path):
     gantt_diagram(data_output_path)
 def main():
     """Minimal CP-SAT example to showcase calling the solver."""
-    Solver_PIE(["./PIE_SXS10_data/nominal/test_data.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
+    Solver_PIE(["./PIE_SXS10_data/nominal/scenario_40SAT_nominal_with_oneoff2.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
 
 if __name__ == '__main__':
     main()
