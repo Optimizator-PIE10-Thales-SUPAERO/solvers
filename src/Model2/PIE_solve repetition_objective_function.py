@@ -167,7 +167,7 @@ def Solver_PIE(data_input_path, data_output_path):
         min_time_lag = int(tache["Min time lag"])
         max_time_lag = int(tache["Max time lag"])
         # repetition = int((temp_end_limit - temp_depart_limit)/(duration+min_time_lag))
-        repetition = 1 # set the maximux repetition 
+        repetition = 3 # set the maximux repetition 
         if (N == 1):
             ts_max_list = []
             ts_list_repetition_total = []
@@ -176,7 +176,6 @@ def Solver_PIE(data_input_path, data_output_path):
                 ts_list_repetition_total.append(ts_list_repetition)
                 ts_bool_negative_list_repetition = []
                 ts_bool_repetition_union_list = []
-                
                 for ant in antennes:
                     # Choose antenna to put ts
                     antenne_name = str(tache["Satellite"])+':'+ str(ant)
@@ -260,7 +259,7 @@ def Solver_PIE(data_input_path, data_output_path):
                         bool_non_negative_i = model.NewBoolVar("t_bool_i: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
                         model.Add(ts_max_list[i]>= 0).OnlyEnforceIf(bool_non_negative_i)
                         bool_non_negative_j = model.NewBoolVar("bool_non_negative_j: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
-                        model.Add(ts_max_list[j]>= 0).OnlyEnforceIf(bool_non_negative_i)
+                        model.Add(ts_max_list[j]>= 0).OnlyEnforceIf(bool_non_negative_j)
                         union_list = []
                         and_list = []
                         and_and_list = []
@@ -270,25 +269,28 @@ def Solver_PIE(data_input_path, data_output_path):
                         # bool_leq = model.NewBoolVar("bool_leq: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
                         bool_non_negative_j_1 = model.NewBoolVar("bool_non_negative_j_1: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
                         bool_negative_j_1 =  model.NewBoolVar("bool_negative_j_1: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
+                        bool_non_negative_j =  model.NewBoolVar("bool_non_negative_j: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
                         bool_and_and = model.NewBoolVar("bool_and_and: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
                         bool_union_union = model.NewBoolVar("bool_union_union: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
                         bool_and = model.NewBoolVar("bool_and: Ant: %s, Vis_index: %s" % (ant,str(index_vis)))
+
                         ## add max time lag
                         ## a[i] = -1
                         ## ou
-                        ## a[i] != -1  and [  a[j+1]  = -1
-                        ##                 [  a[j+1] != -1 and a[j] = -1 and abs(a[i]-a[j+1]) >= (max time lag + duration)
+                        ## a[i] != -1  and [  a[j-1]  != -1
+                        ##                 [  a[j-1]  == -1 and a[j] != -1 and abs(a[i]-a[j]) <= (max time lag + duration)
                         model.Add(ts_max_list[j-1]== -1).OnlyEnforceIf(bool_negative_j_1)
                         # model.Add(ts_max_list[i]< ts_max_list[j+1]).OnlyEnforceIf(bool_leq)
+                        model.Add(ts_max_list[j]>= 0).OnlyEnforceIf(bool_non_negative_j)
                         model.Add(ts_max_list[j-1]>= 0).OnlyEnforceIf(bool_non_negative_j_1)
-
-                        and_and_list.append(bool_non_negative_j)
+                        
                         and_and_list.append(bool_negative_j_1)
+                        and_and_list.append(bool_non_negative_j)
                         model.Add(ts_abs<=max_time_lag+duration).OnlyEnforceIf(bool_max_time_lag)
                         and_and_list.append(bool_max_time_lag)
                         model.Add(sum(and_and_list)==3).OnlyEnforceIf(bool_and_and)
 
-                        union_union_list.append(bool_negative_j)
+                        union_union_list.append(bool_non_negative_j_1)
                         union_union_list.append(bool_and_and)
                         model.Add(sum(union_union_list)==1).OnlyEnforceIf(bool_union_union)
 
@@ -354,46 +356,46 @@ def Solver_PIE(data_input_path, data_output_path):
             model.AddMaxEquality(obj_var_chaque_tache, ts_list)
             obj_var_tache_list.append(obj_var_chaque_tache)     
 
-    # Add the "limitation that the same antenne cannot do two tasks at the same time" constraint 
-    # ts_ant_list = []
-    # duration_ant_list = []
-    # sat_list_temp = []
-    # for key in ts_dict_2d_par_antenne:
-    #     ts_list_TEMP = ts_dict_2d_par_antenne[key]
-    #     duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
-    #     satlite = key.split(":")[0]
-    #     if (satlite not in sat_list_temp):
-    #         sat_list_temp.append(satlite)
-    #         ts_list = []
-    #         duration_list = []
-    #         ts_ant_list.append(ts_list)
-    #         duration_ant_list.append(duration_list)
-    #     sat_index = sat_list_temp.index(satlite)
-    #     for ts_temp in ts_list_TEMP:
-    #         ts_ant_list[sat_index].append(ts_temp)
-    #     for duration_temp in duration_list_TEMP:
-    #         duration_ant_list[sat_index].append(duration_temp)
+    # Add the "limitation that the same satellite cannot do two tasks at the same time" constraint 
+    ts_ant_list = []
+    duration_ant_list = []
+    sat_list_temp = []
+    for key in ts_dict_2d_par_antenne:
+        ts_list_TEMP = ts_dict_2d_par_antenne[key]
+        duration_list_TEMP = duration_ts_dict_2d_par_antenne[key]
+        satlite = key.split(":")[0]
+        if (satlite not in sat_list_temp):
+            sat_list_temp.append(satlite)
+            ts_list = []
+            duration_list = []
+            ts_ant_list.append(ts_list)
+            duration_ant_list.append(duration_list)
+        sat_index = sat_list_temp.index(satlite)
+        for ts_temp in ts_list_TEMP:
+            ts_ant_list[sat_index].append(ts_temp)
+        for duration_temp in duration_list_TEMP:
+            duration_ant_list[sat_index].append(duration_temp)
     
-    # for sat in sat_list_temp:
-    #     sat_index = sat_list_temp.index(sat)
-    #     ts_list = ts_ant_list[sat_index]
-    #     duration_list = duration_ant_list[sat_index]
+    for sat in sat_list_temp:
+        sat_index = sat_list_temp.index(sat)
+        ts_list = ts_ant_list[sat_index]
+        duration_list = duration_ant_list[sat_index]
 
-    #     if (len(ts_list)==0):
-    #         continue
-    #     for i in range(len(ts_list)):
-    #         ts_bool_equal_1 = model.NewBoolVar("ts_bool_equal_1: %s"% str(ts_list[i]))
-    #         model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
-    #         for j in range(i+1,len(ts_list)):
-    #             temp_bool_union = []
-    #             bool_smaller = model.NewBoolVar("smaller")
-    #             bool_bigger = model.NewBoolVar("bigger")
-    #             model.Add((ts_list[i]+duration_list[i])<=ts_list[j]).OnlyEnforceIf(bool_smaller)
-    #             model.Add(ts_list[i]>=ts_list[j] +duration_list[j]).OnlyEnforceIf(bool_bigger)
-    #             temp_bool_union.append(bool_smaller)
-    #             temp_bool_union.append(bool_bigger)
-    #             temp_bool_union.append(ts_bool_equal_1)
-    #             model.Add(sum(temp_bool_union)==1)
+        if (len(ts_list)==0):
+            continue
+        for i in range(len(ts_list)):
+            ts_bool_equal_1 = model.NewBoolVar("ts_bool_equal_1: %s"% str(ts_list[i]))
+            model.Add(ts_list[i]==-1).OnlyEnforceIf(ts_bool_equal_1)
+            for j in range(i+1,len(ts_list)):
+                temp_bool_union = []
+                bool_smaller = model.NewBoolVar("smaller")
+                bool_bigger = model.NewBoolVar("bigger")
+                model.Add((ts_list[i]+duration_list[i])<=ts_list[j]).OnlyEnforceIf(bool_smaller)
+                model.Add(ts_list[i]>=ts_list[j] +duration_list[j]).OnlyEnforceIf(bool_bigger)
+                temp_bool_union.append(bool_smaller)
+                temp_bool_union.append(bool_bigger)
+                temp_bool_union.append(ts_bool_equal_1)
+                model.Add(sum(temp_bool_union)==1)
 
     ts_ant_list = []
     duration_ant_list = []
@@ -461,7 +463,7 @@ def Solver_PIE(data_input_path, data_output_path):
     gantt_diagram(data_output_path)
 def main():
     """Minimal CP-SAT example to showcase calling the solver."""
-    Solver_PIE(["./PIE_SXS10_data/nominal/scenario_10SAT_nominal_with_oneoff1.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
+    Solver_PIE(["./PIE_SXS10_data/nominal/test_data.txt","./PIE_SXS10_data/visibilities.txt"], 'Solution Data.xls')
 
 if __name__ == '__main__':
     main()
