@@ -1,0 +1,37 @@
+-->Statistics<--
+  status   : OPTIMAL
+  conflicts: 0
+  branches : 488
+  wall time: 0.10768754300000001 s
+Optimal score : 1250.0
+
+TASK0:  
+SAT10_ANT2_OCC0     [0,27265]      
+
+TASK4:  
+SAT22_ANT11_OCC0    [10921,38160]  
+
+TASK8:  
+SAT07_ANT8_OCC0     [10196,37490]  
+
+TASK12:  
+SAT18_ANT9_OCC0     [7392,34661]   
+
+TASK16:  
+SAT02_ANT3_OCC0     [12006,39289]  
+
+TASK20:  
+SAT13_ANT6_OCC0     [3124,30698]   
+
+TASK24:  
+SAT09_ANT7_OCC0     [0,27448]      
+
+TASK28:  
+SAT23_ANT10_OCC0    [0,27291]      
+
+TASK32:  
+SAT17_ANT5_OCC0     [0,27315]      
+
+TASK36:  
+SAT05_ANT1_OCC0     [0,27222]      
+
